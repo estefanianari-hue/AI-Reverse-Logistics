@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Centralización EnoE – Reporte</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #fff;
+      color: #333;
+      margin: 0;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 {
+      color: #ffe600;
+      background: #3483fa;
+      margin: -24px -24px 24px -24px;
+      padding: 20px 24px;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    h2 {
+      color: #3483fa;
+      font-size: 1.2rem;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #ffe600;
+    }
+    .kpi {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: #f5f5f5;
+      border-left: 4px solid #3483fa;
+      padding: 16px 20px;
+      min-width: 140px;
+      border-radius: 4px;
+    }
+    .kpi-card.alert { border-left-color: #f23d4f; }
+    .kpi-card.ok { border-left-color: #00a650; }
+    .kpi-card .value { font-size: 1.75rem; font-weight: 700; color: #333; }
+    .kpi-card .label { font-size: 0.85rem; color: #666; margin-top: 4px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    th, td { padding: 12px 16px; text-align: left; }
+    th {
+      background: #3483fa;
+      color: #fff;
+      font-weight: 600;
+    }
+    tr:nth-child(even) { background: #f9f9f9; }
+    tr:hover { background: #f0f7ff; }
+    .number { text-align: right; font-variant-numeric: tabular-nums; }
+    .footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+      font-size: 0.8rem;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Centralización EnoE (MLM) – Reporte</h1>
+    <p><strong>Fuente:</strong> meli-sbox.SBOXSHPBIPRODUCTO.Centralizacion_Datos · status_ativacao = 'depois' · CDU_valido = 'VALIDO'</p>
+
+    <h2>1. Casos de error de definición de destino</h2>
+    <div class="kpi">
+      <div class="kpi-card alert">
+        <div class="value">98</div>
+        <div class="label">Nao seguiu regra (error)</div>
+      </div>
+      <div class="kpi-card ok">
+        <div class="value">137</div>
+        <div class="label">Seguiu regra</div>
+      </div>
+      <div class="kpi-card">
+        <div class="value">235</div>
+        <div class="label">Total envíos válidos</div>
+      </div>
+    </div>
+    <p>~42% de los envíos tienen error de definición de destino (WH generado ≠ WH planeado).</p>
+    <table>
+      <thead>
+        <tr>
+          <th>classificacao_regra_WH</th>
+          <th>classificacao_trocou_WH</th>
+          <th class="number">cantidad</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Nao seguiu regra</td>
+          <td>Nao trocamos WH</td>
+          <td class="number">93</td>
+        </tr>
+        <tr>
+          <td>Nao seguiu regra</td>
+          <td>Trocamos WH</td>
+          <td class="number">5</td>
+        </tr>
+        <tr>
+          <td>Seguiu regra</td>
+          <td>Trocamos WH</td>
+          <td class="number">73</td>
+        </tr>
+        <tr>
+          <td>Seguiu regra</td>
+          <td>Nao trocamos WH</td>
+          <td class="number">64</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>2. Tags que generaron errores</h2>
+    <p>Distribución de <strong>Flag_Identificada</strong> entre los casos &quot;Nao seguiu regra&quot;:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Flag_Identificada</th>
+          <th class="number">cantidad</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>SORTABLE</td>
+          <td class="number">76</td>
+        </tr>
+        <tr>
+          <td>NON_TOTABLE</td>
+          <td class="number">11</td>
+        </tr>
+        <tr>
+          <td>(sin flag / NA)</td>
+          <td class="number">11</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>La mayoría de los errores corresponden a ítems <strong>SORTABLE</strong> (regla &quot;depende origem&quot;). Revisar mapeo origen→destino y ítems sin flag.</p>
+
+    <h2>3. Destinos que reciben envíos que no deberían</h2>
+    <p>WH_generado que está recibiendo cuando el WH_planeado era otro:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Destino que recibe (WH_generado)</th>
+          <th>Destino que debería (WH_planeado)</th>
+          <th class="number">envíos incorrectos</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>MXGT01</strong></td>
+          <td>MXCD09</td>
+          <td class="number">75</td>
+        </tr>
+        <tr>
+          <td><strong>MXGT01</strong></td>
+          <td>MXCD11</td>
+          <td class="number">8</td>
+        </tr>
+        <tr>
+          <td>MXCD06</td>
+          <td>MXCD09</td>
+          <td class="number">8</td>
+        </tr>
+        <tr>
+          <td>MXJC01</td>
+          <td>MXCD11</td>
+          <td class="number">2</td>
+        </tr>
+        <tr>
+          <td>MXCD06</td>
+          <td>MXJC01</td>
+          <td class="number">2</td>
+        </tr>
+        <tr>
+          <td>MXCD09</td>
+          <td>MXCD11</td>
+          <td class="number">1</td>
+        </tr>
+        <tr>
+          <td>MXCD02</td>
+          <td>MXCD09</td>
+          <td class="number">1</td>
+        </tr>
+        <tr>
+          <td>MXCD10</td>
+          <td>MXCD09</td>
+          <td class="number">1</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><strong>Punto crítico:</strong> <strong>MXGT01</strong> recibe 83 envíos que no deberían ir ahí (75 a MXCD09, 8 a MXCD11). No está en el origin_map como destino de centralización; revisar por qué el autorizador envía volumen ahí. En segundo lugar, <strong>MXCD06</strong> recibe 10 envíos incorrectos.</p>
+
+    <div class="footer">
+      Reporte generado a partir de Centralizacion_Datos. Centralización EnoE MLM.
+    </div>
+  </div>
+  <script>
+    // Opcional: abrir en ventana actual si se usa file://
+    console.log('Reporte Centralización EnoE cargado');
+  </script>
+</body>
+</html>
