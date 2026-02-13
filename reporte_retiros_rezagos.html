@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Report Scorecard Retiros y Rezagos</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #fff;
+      color: #333;
+      margin: 0;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 {
+      color: #ffe600;
+      background: #3483fa;
+      margin: -24px -24px 24px -24px;
+      padding: 20px 24px;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    h2 {
+      color: #3483fa;
+      font-size: 1.2rem;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #ffe600;
+    }
+    /* Filtros */
+    .filtros {
+      background: #f5f5f5;
+      border: 1px solid #e6e6e6;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      align-items: end;
+    }
+    .filtros label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    .filtros select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      background: #fff;
+    }
+    .filtros select:focus {
+      outline: none;
+      border-color: #3483fa;
+      box-shadow: 0 0 0 2px rgba(52, 131, 250, 0.2);
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: #3483fa;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #2968c8; }
+    .btn-secondary {
+      background: #fff;
+      color: #3483fa;
+      border: 1px solid #3483fa;
+    }
+    .btn-secondary:hover { background: #f0f7ff; }
+    /* KPIs destacados */
+    .kpi {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: #f5f5f5;
+      border-left: 4px solid #3483fa;
+      padding: 16px 20px;
+      min-width: 140px;
+      border-radius: 4px;
+    }
+    .kpi-card .value { font-size: 1.75rem; font-weight: 700; color: #333; }
+    .kpi-card .label { font-size: 0.85rem; color: #666; margin-top: 4px; }
+    /* Tabla principal */
+    .tabla-wrap { overflow-x: auto; margin-bottom: 24px; max-width: 100%; }
+    table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    th, td { padding: 8px 6px; text-align: center; }
+    th {
+      background: #3483fa;
+      color: #fff;
+      font-weight: 600;
+    }
+    th.th-period { white-space: normal; line-height: 1.2; text-align: center; word-break: break-word; }
+    th.num, td.num { text-align: center; font-variant-numeric: tabular-nums; }
+    /* Resumen por Site: 6 columnas */
+    #tabla-kpis th:nth-child(1), #tabla-kpis td:nth-child(1) { width: 10%; }
+    #tabla-kpis th:nth-child(2), #tabla-kpis th:nth-child(3), #tabla-kpis th:nth-child(4),
+    #tabla-kpis td:nth-child(2), #tabla-kpis td:nth-child(3), #tabla-kpis td:nth-child(4) { width: 18%; }
+    #tabla-kpis th:nth-child(5), #tabla-kpis th:nth-child(6), #tabla-kpis td:nth-child(5), #tabla-kpis td:nth-child(6) { width: 14%; }
+    /* Detalle por FC: 7 columnas */
+    #tabla-fc th:nth-child(1), #tabla-fc td:nth-child(1) { width: 8%; }
+    #tabla-fc th:nth-child(2), #tabla-fc td:nth-child(2) { width: 7%; }
+    #tabla-fc th:nth-child(3), #tabla-fc th:nth-child(4), #tabla-fc th:nth-child(5),
+    #tabla-fc td:nth-child(3), #tabla-fc td:nth-child(4), #tabla-fc td:nth-child(5) { width: 17%; }
+    #tabla-fc th:nth-child(6), #tabla-fc th:nth-child(7), #tabla-fc td:nth-child(6), #tabla-fc td:nth-child(7) { width: 13%; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    tr.row-header th { background: #3483fa; color: #fff; font-weight: 700; }
+    tr:hover { background: #f0f7ff; }
+    tr.kpi-group { font-weight: 600; background: #e8f0fe; }
+    tr.total-row { font-weight: 700; background: #e8f0fe; }
+    .delta-pos { color: #00a650; }
+    .delta-neg { color: #f23d4f; }
+    .note { font-size: 0.9rem; color: #666; margin-bottom: 16px; }
+    .footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+      font-size: 0.8rem;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Daily Report Scorecard Retiros y Rezagos</h1>
+    <p class="note">Datos desde <strong>01/10/2025</strong> hasta el <strong id="fecha-hoy-nota"></strong> (fecha de actualización). Períodos: Pre (01 Oct-30 Nov), Pre (01-31 Dic), Post (19 Ene-08 Feb).</p>
+
+    <!-- Filtros: Año, Site, FC -->
+    <h2>Filtros</h2>
+    <div class="filtros">
+      <div>
+        <label for="anio">Año</label>
+        <select id="anio">
+          <option value="Todos">Todos</option>
+          <option value="2025">2025</option>
+          <option value="2026">2026</option>
+        </select>
+      </div>
+      <div>
+        <label for="site">Site / País</label>
+        <select id="site">
+          <option value="">Todos</option>
+          <option value="MLB">MLB</option>
+          <option value="MLM">MLM</option>
+          <option value="MLA">MLA</option>
+          <option value="MLC">MLC</option>
+          <option value="MCO">MCO</option>
+        </select>
+      </div>
+      <div>
+        <label for="fc">FC</label>
+        <select id="fc"><option value="">Todos</option></select>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn btn-primary" onclick="aplicarFiltros()">Aplicar</button>
+        <button type="button" class="btn btn-secondary" onclick="descargarCSV()">Descargar CSV</button>
+      </div>
+    </div>
+
+    <h2>Resumen KPIs</h2>
+    <p class="note">Todo el dashboard (tarjetas, Resumen por Site y Detalle por FC) cambia según los filtros Año, Site y FC.</p>
+    <div class="kpi" id="kpi-cards">
+      <div class="kpi-card">
+        <div class="value" id="kpi-picking">58,3</div>
+        <div class="label" id="kpi-picking-label">Productividad efectiva (Picking)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="value" id="kpi-packing">124,1</div>
+        <div class="label" id="kpi-packing-label">Productividad efectiva (Packing)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="value" id="kpi-tote">5,9</div>
+        <div class="label" id="kpi-tote-label">Piezas por Tote (#unidades/#totes)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="value" id="kpi-share">35,4%</div>
+        <div class="label" id="kpi-share-label">Share Retiros</div>
+      </div>
+    </div>
+
+    <h2>Resumen por Site</h2>
+    <div class="tabla-wrap">
+      <table id="tabla-kpis">
+        <thead id="tabla-kpis-thead"><tr><th>Site</th></tr></thead>
+        <tbody id="tabla-kpis-body"></tbody>
+      </table>
+    </div>
+
+    <h2>Detalle por FC (centro logístico)</h2>
+    <div class="tabla-wrap">
+      <table id="tabla-fc">
+        <thead id="tabla-fc-thead"><tr><th>Site</th><th>FC</th></tr></thead>
+        <tbody id="tabla-fc-body"></tbody>
+      </table>
+    </div>
+
+    <h2>Fuentes de datos</h2>
+    <div class="footer">
+      <strong>Tablas principales (BigQuery, proyecto meli-bi-data):</strong><br>
+      • <strong>SBOX_REVERSA.REMOVALS_PRODUCTIVITY_AREA</strong> — Productividad efectiva (Picking y Packing), WAREHOUSE = FC.<br>
+      • <strong>SBOX_REVERSA.RETURNS_NP_OUT</strong> — Share Retiros, LOGISTIC_CENTER_ID = FC.<br>
+      • <strong>SHIPPING_BI.BT_SHP_MT_FBM_PICKING_ROUTE</strong> — Piezas por Tote (#unidades/#totes: suma de selecciones ÷ suma de totes).<br>
+      Datos desde 01/10/2025 hasta el <span id="fecha-hoy-footer"></span> (actualización diaria).
+    </div>
+  </div>
+
+  <script>
+    var datosPickingFC = [["MCO","COCU02",102.2,97.3,103.6,1.4,6.5],["MLA","ARBA01",134.5,141.9,140.5,4.5,-1],["MLA","ARBA02",54.5,49.4,53.8,-1.3,8.9],["MLA","ARBA04",74.7,81.8,84.3,12.9,3.1],["MLB","BRBA01",114.4,129.8,139.4,21.9,7.4],["MLB","BRBA02",85.5,88.8,87.1,1.9,-1.9],["MLB","BRDF01",113.4,115.7,110.4,-2.6,-4.6],["MLB","BRMG01",132.4,131.5,130.5,-1.4,-0.8],["MLB","BRMG02",120.4,125.4,120.3,-0.1,-4.1],["MLB","BRPE01",112.3,115.9,118.9,5.9,2.6],["MLB","BRSC02",120.2,126.4,126.3,5.1,-0.1],["MLB","BRSP02",123.6,128,132.6,7.3,3.6],["MLB","BRSP19",119.6,123.4,132,10.4,7],["MLC","CLBB01",83.3,106.7,96.2,15.5,-9.8],["MLC","CLRM03",121,116.1,122.9,1.6,5.9],["MLM","MXCD02",100.6,98.9,104.8,4.2,6],["MLM","MXCD09",100.9,107.2,111.3,10.3,3.8],["MLM","MXJC01",120.4,122,130.8,8.6,7.2],["MLM","MXYU01",89,91.9,101.5,14,10.4]];
+    var datosPackingFC = [["MCO","COCU02",174.8,170.5,188.5,7.8,10.6],["MLA","ARBA01",204,222,226.5,11,2],["MLA","ARBA02",57.6,66.3,82.2,42.7,24],["MLA","ARBA04",82.7,92.7,99.6,20.4,7.4],["MLB","BRBA01",206.4,215.1,218.1,5.7,1.4],["MLB","BRMG01",181,176.2,188.7,4.3,7.1],["MLB","BRSC02",263.9,276.2,281.5,6.7,1.9],["MLB","BRSP02",210.7,218.8,219.7,4.3,0.4],["MLB","BRSP19",213.1,240.2,253.9,19.1,5.7],["MLC","CLRM03",234.8,229.2,256.1,9.1,11.7],["MLM","MXCD02",217.8,210.7,244.7,12.4,16.1],["MLM","MXCD09",231.1,235.4,274.6,18.8,16.7],["MLM","MXJC01",288.7,293.6,331.3,14.8,12.8],["MLM","MXYU01",269.2,270,300.6,11.7,11.3]];
+    var datosShareFC = [["MCO","COCU02",92.7,95.3,92.2,-0.5,-3.3],["MLA","ARBA01",89.4,93.5,90.6,1.3,-2.9],["MLA","ARBA02",89.4,89.7,34.2,-61.7,-61.9],["MLA","ARBA04",89.4,89.7,90.9,1.7,1.3],["MLB","BRBA01",72.4,79.5,64.8,-10.6,-18.5],["MLB","BRMG01",72.4,56.4,56.1,-22.5,-0.5],["MLB","BRSC02",72.4,78,73,0.8,-6.4],["MLB","BRSP02",72.4,65.3,75.2,3.9,15.2],["MLB","BRSP19",72.4,83,55.1,-23.9,-33.6],["MLC","CLRM03",78.9,75.2,80.1,1.5,6.5],["MLM","MXCD02",59.5,58.1,59.5,0,-2.2],["MLM","MXJC01",59.5,82.1,70.3,18.2,-14.3],["MLM","MXYU01",59.5,76.6,63.5,6.7,-17.1]];
+    // Piezas por Tote = SUM(selecciones)/SUM(totes). Fuente: SHIPPING_BI.BT_SHP_MT_FBM_PICKING_ROUTE. Reemplazar con resultado de sql/query_piezas_por_tote.sql (detalle por FC).
+    var datosToteFC = [["MCO","COCU02",8.4,6.9,4.2,-50,-39.1],["MLA","ARBA01",5.8,7.2,6.8,17.2,-5.6],["MLA","ARBA02",5.2,7.5,7.2,38.5,-4],["MLA","ARBA04",5.5,8.4,7.4,34.5,-11.9],["MLB","BRBA01",5.6,5.1,5.5,-1.8,7.8],["MLB","BRMG01",5.2,4.7,5.1,-1.9,8.5],["MLB","BRSC02",5.5,5,5.4,-1.8,8],["MLB","BRSP02",5.3,4.8,5.2,-1.9,8.3],["MLB","BRSP19",5.4,4.9,5.3,-1.9,8.2],["MLC","CLRM03",6,5,7.4,23.3,48],["MLM","MXCD02",5.4,5.2,5.9,9.3,13.5],["MLM","MXJC01",5.8,5.6,6.5,12.1,16.1],["MLM","MXYU01",5.4,5.4,6.2,14.8,14.8]];
+    var resumenSite = { MLB: { picking: 55.1, packing: 125.0, tote: 5.3, share: 36.6 }, MLM: { picking: 61.1, packing: 127.7, tote: 6.2, share: 34.9 }, MLA: { picking: 51.1, packing: 90.1, tote: 7.1, share: 34.2 }, MLC: { picking: 95.7, packing: 192.8, tote: 7.4, share: 28.5 }, MCO: { picking: 99.7, packing: 142.1, tote: 4.2, share: 26.0 }, Total: { picking: 58.3, packing: 124.1, tote: 5.9, share: 35.4 } };
+    var resumenSiteFull = { MLB: { picking: [47.1,52.7,55.1], packing: [120.5,119.5,125], tote: [5.4,4.9,5.3], share: [72.4,69.1,36.6] }, MLM: { picking: [61.6,56.6,61.1], packing: [147.5,121.3,127.7], tote: [5.5,5.4,6.2], share: [59.5,51.5,34.9] }, MLA: { picking: [56.4,55.5,51.1], packing: [101.8,98.1,90.1], tote: [5.5,7.7,7.1], share: [89.4,89.7,34.2] }, MLC: { picking: [91.2,87,95.7], packing: [165.5,176.9,192.8], tote: [6,5,7.4], share: [78.9,74.1,28.5] }, MCO: { picking: [110.2,113.5,99.7], packing: [189.1,174.9,142.1], tote: [8.4,6.9,4.2], share: [92.7,95,26] }, Total: { picking: [53.8,55.7,58.3], packing: [130.1,120.7,124.1], tote: [5.5,5.3,5.9], share: [68.9,63.7,35.4] } };
+    var SITES_ORDER = ['MLB','MLM','MLA','MLC','MCO','Total'];
+    function fmt(v) { return v == null || v === '' ? '—' : Number(v).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+    function fmtPct(v) { return v == null || v === '' ? '—' : fmt(v) + '%'; }
+    function deltaClass(d) { if (d == null || d === '') return ''; return Number(d) >= 0 ? 'delta-pos' : 'delta-neg'; }
+    function filtrarPorSiteYFC(arr, siteFilter, fcFilter) {
+      if (!siteFilter && !fcFilter) return arr;
+      return arr.filter(function(r) {
+        var okSite = !siteFilter || r[0] === siteFilter;
+        var okFC = !fcFilter || r[1] === fcFilter;
+        return okSite && okFC;
+      });
+    }
+    function buscarValorFC(arr, site, fc, indiceP3) {
+      var r = arr.find(function(x) { return x[0] === site && x[1] === fc; });
+      return r ? r[indiceP3] : null;
+    }
+    function valorParaAnio(arr, anio, idxP1, idxP2, idxP3) {
+      if (anio === '2025') { var p1 = arr[idxP1], p2 = arr[idxP2]; return (p1 != null && p2 != null) ? (p1 + p2) / 2 : (p2 != null ? p2 : p1); }
+      return arr[idxP3];
+    }
+    function updateKpiCards(siteFilter, fcFilter, anio) {
+      anio = anio || (document.getElementById('anio') && document.getElementById('anio').value) || 'Todos';
+      var scope = '';
+      var picking, packing, tote, share;
+      if (fcFilter) {
+        var todos = datosPickingFC.concat(datosPackingFC).concat(datosToteFC).concat(datosShareFC);
+        var s = siteFilter || (function() { for (var i = 0; i < todos.length; i++) if (todos[i][1] === fcFilter) return todos[i][0]; return ''; })();
+        scope = ' · ' + (s || '') + ' ' + fcFilter;
+        var rPick = datosPickingFC.find(function(x) { return x[0] === s && x[1] === fcFilter; });
+        var rPack = datosPackingFC.find(function(x) { return x[0] === s && x[1] === fcFilter; });
+        var rTote = datosToteFC.find(function(x) { return x[0] === s && x[1] === fcFilter; });
+        var rShare = datosShareFC.find(function(x) { return x[0] === s && x[1] === fcFilter; });
+        picking = rPick ? valorParaAnio(rPick, anio, 2, 3, 4) : null;
+        packing = rPack ? valorParaAnio(rPack, anio, 2, 3, 4) : null;
+        tote = rTote ? valorParaAnio(rTote, anio, 2, 3, 4) : null;
+        share = rShare ? valorParaAnio(rShare, anio, 2, 3, 4) : null;
+      } else {
+        var siteKey = siteFilter || 'Total';
+        scope = siteFilter ? ' · ' + siteFilter : ' · Total';
+        var R = resumenSiteFull[siteKey] || resumenSiteFull.Total;
+        picking = R ? valorParaAnio(R.picking, anio, 0, 1, 2) : null;
+        packing = R ? valorParaAnio(R.packing, anio, 0, 1, 2) : null;
+        tote = R ? valorParaAnio(R.tote, anio, 0, 1, 2) : null;
+        share = R ? valorParaAnio(R.share, anio, 0, 1, 2) : null;
+      }
+      document.getElementById('kpi-picking').textContent = picking != null ? fmt(picking) : '—';
+      document.getElementById('kpi-packing').textContent = packing != null ? fmt(packing) : '—';
+      document.getElementById('kpi-tote').textContent = tote != null ? fmt(tote) : '—';
+      document.getElementById('kpi-share').textContent = share != null ? fmt(share) + '%' : '—';
+      document.getElementById('kpi-picking-label').textContent = 'Productividad efectiva (Picking)' + scope + ' · ' + anio;
+      document.getElementById('kpi-packing-label').textContent = 'Productividad efectiva (Packing)' + scope + ' · ' + anio;
+      document.getElementById('kpi-tote-label').textContent = 'Piezas por Tote (#unidades/#totes)' + scope + ' · ' + anio;
+      document.getElementById('kpi-share-label').textContent = 'Share Retiros' + scope + ' · ' + anio;
+    }
+    function renderResumenTable(anio, siteFilter) {
+      anio = anio || (document.getElementById('anio') && document.getElementById('anio').value) || 'Todos';
+      siteFilter = siteFilter || '';
+      var thead = document.getElementById('tabla-kpis-thead');
+      var tbody = document.getElementById('tabla-kpis-body');
+      var sites = siteFilter ? SITES_ORDER.filter(function(s) { return s === siteFilter || s === 'Total'; }) : SITES_ORDER.slice();
+      var headerHtml, fila = function(site, kpi, vals, esPct) {
+        var v0 = esPct ? fmtPct(vals[0]) : fmt(vals[0]), v1 = esPct ? fmtPct(vals[1]) : fmt(vals[1]), v2 = esPct ? fmtPct(vals[2]) : fmt(vals[2]);
+        var d21 = vals[0] != null && vals[1] != null ? (vals[1] - vals[0]) / vals[0] * 100 : null;
+        var d32 = vals[1] != null && vals[2] != null ? (vals[2] - vals[1]) / vals[1] * 100 : null;
+        var d31 = vals[0] != null && vals[2] != null ? (vals[2] - vals[0]) / vals[0] * 100 : null;
+        if (anio === '2025') return '<tr><td>' + site + '</td><td class="num">' + v0 + '</td><td class="num">' + v1 + '</td><td class="num delta-col ' + deltaClass(d21) + '">' + (d21 != null ? fmt(d21) + '%' : '—') + '</td></tr>';
+        if (anio === '2026') return '<tr><td>' + site + '</td><td class="num">' + v2 + '</td></tr>';
+        return '<tr><td>' + site + '</td><td class="num">' + v0 + '</td><td class="num">' + v1 + '</td><td class="num">' + v2 + '</td><td class="num delta-col ' + deltaClass(d31) + '">' + (d31 != null ? fmt(d31) + '%' : '—') + '</td><td class="num delta-col ' + deltaClass(d32) + '">' + (d32 != null ? fmt(d32) + '%' : '—') + '</td></tr>';
+      };
+      if (anio === '2025') headerHtml = '<tr><th>Site</th><th class="num th-period">Pre-implemen<br>(01 Oct - 30 Nov 2025)</th><th class="num th-period">Pre-implemen<br>(01-31 Dic 2025)</th><th class="num delta-col">Delta Dic vs Oct+Nov</th></tr>';
+      else if (anio === '2026') headerHtml = '<tr><th>Site</th><th class="num th-period">Post-implemen<br>(19 Ene - 08 Feb 2026)</th></tr>';
+      else headerHtml = '<tr><th>Site</th><th class="num th-period">Pre-implemen<br>(01 Oct - 30 Nov 2025)</th><th class="num th-period">Pre-implemen<br>(01-31 Dic 2025)</th><th class="num th-period">Post-implemen<br>(19 Ene - 08 Feb 2026)</th><th class="num delta-col">Delta vs Oct+Nov</th><th class="num delta-col">Delta vs Dic</th></tr>';
+      thead.innerHTML = headerHtml;
+      var html = '';
+      ['picking','packing','tote','share'].forEach(function(kpiName, idx) {
+        var nombres = { picking: 'Productividad efectiva (Picking)', packing: 'Productividad efectiva (Packing)', tote: 'Piezas por Tote', share: 'Share Retiros' };
+        var esPct = kpiName === 'share';
+        var colSpan = anio === '2025' ? 4 : anio === '2026' ? 2 : 6;
+        html += '<tr class="kpi-group"><td colspan="' + colSpan + '">' + nombres[kpiName] + '</td></tr>';
+        for (var i = 0; i < sites.length; i++) {
+          var s = sites[i], R = resumenSiteFull[s];
+          if (!R) continue;
+          html += fila(s, kpiName, R[kpiName], esPct);
+        }
+      });
+      tbody.innerHTML = html;
+    }
+    function renderTablaFC(siteFilter, fcFilter, anio) {
+      anio = anio || (document.getElementById('anio') && document.getElementById('anio').value) || 'Todos';
+      siteFilter = siteFilter || '';
+      fcFilter = fcFilter || '';
+      var pick = filtrarPorSiteYFC(datosPickingFC, siteFilter, fcFilter);
+      var pack = filtrarPorSiteYFC(datosPackingFC, siteFilter, fcFilter);
+      var tote = filtrarPorSiteYFC(datosToteFC, siteFilter, fcFilter);
+      var share = filtrarPorSiteYFC(datosShareFC, siteFilter, fcFilter);
+      var thead = document.getElementById('tabla-fc-thead');
+      var tbody = document.getElementById('tabla-fc-body');
+      var nCol = anio === '2025' ? 5 : anio === '2026' ? 3 : 7;
+      var headerRowFC = anio === '2025' ? '<tr class="row-header"><th>Site</th><th>FC</th><th class="num th-period">Pre-implemen<br>(01 Oct - 30 Nov 2025)</th><th class="num th-period">Pre-implemen<br>(01-31 Dic 2025)</th><th class="num delta-col">Delta Dic vs Oct+Nov</th></tr>' : anio === '2026' ? '<tr class="row-header"><th>Site</th><th>FC</th><th class="num th-period">Post-implemen<br>(19 Ene - 08 Feb 2026)</th></tr>' : '<tr class="row-header"><th>Site</th><th>FC</th><th class="num th-period">Pre-implemen<br>(01 Oct - 30 Nov 2025)</th><th class="num th-period">Pre-implemen<br>(01-31 Dic 2025)</th><th class="num th-period">Post-implemen<br>(19 Ene - 08 Feb 2026)</th><th class="num delta-col">Delta vs Oct+Nov</th><th class="num delta-col">Delta vs Dic</th></tr>';
+      function filas(data, esPct) {
+        var out = '';
+        for (var i = 0; i < data.length; i++) {
+          var r = data[i], site = r[0], fc = r[1], p1 = r[2], p2 = r[3], p3 = r[4], d1 = r[5], d2 = r[6];
+          var v1 = esPct ? fmtPct(p1) : fmt(p1), v2 = esPct ? fmtPct(p2) : fmt(p2), v3 = esPct ? fmtPct(p3) : fmt(p3);
+          var d21 = (p1 != null && p2 != null) ? (p2 - p1) / p1 * 100 : null;
+          if (anio === '2025') { out += '<tr><td>' + site + '</td><td>' + fc + '</td><td class="num">' + v1 + '</td><td class="num">' + v2 + '</td><td class="num delta-col ' + deltaClass(d21) + '">' + (d21 != null ? fmt(d21) + '%' : '—') + '</td></tr>'; continue; }
+          if (anio === '2026') { out += '<tr><td>' + site + '</td><td>' + fc + '</td><td class="num">' + v3 + '</td></tr>'; continue; }
+          var dd1 = d1 != null ? fmt(d1) + '%' : '—', dd2 = d2 != null ? fmt(d2) + '%' : '—';
+          out += '<tr><td>' + site + '</td><td>' + fc + '</td><td class="num">' + v1 + '</td><td class="num">' + v2 + '</td><td class="num">' + v3 + '</td><td class="num ' + deltaClass(d1) + '">' + dd1 + '</td><td class="num ' + deltaClass(d2) + '">' + dd2 + '</td></tr>';
+        }
+        return out;
+      }
+      var html = '';
+      html += '<tr class="kpi-group"><td colspan="' + nCol + '">Productividad efectiva (Picking) · por FC</td></tr>' + filas(pick, false);
+      html += (anio === '2025' ? '<tr class="total-row"><td>Total</td><td>—</td><td class="num">53,8</td><td class="num">55,7</td><td class="num">—</td></tr>' : anio === '2026' ? '<tr class="total-row"><td>Total</td><td>—</td><td class="num">58,3</td></tr>' : '<tr class="total-row"><td>Total</td><td>—</td><td class="num">53,8</td><td class="num">55,7</td><td class="num">58,3</td><td class="num delta-pos">8,3%</td><td class="num delta-pos">4,6%</td></tr>');
+      html += headerRowFC + '<tr class="kpi-group"><td colspan="' + nCol + '">Productividad efectiva (Packing) · por FC</td></tr>' + filas(pack, false);
+      html += (anio === '2025' ? '<tr class="total-row"><td>Total</td><td>—</td><td class="num">130,1</td><td class="num">120,7</td><td class="num">—</td></tr>' : anio === '2026' ? '<tr class="total-row"><td>Total</td><td>—</td><td class="num">124,1</td></tr>' : '<tr class="total-row"><td>Total</td><td>—</td><td class="num">130,1</td><td class="num">120,7</td><td class="num">124,1</td><td class="num delta-neg">-4,6%</td><td class="num delta-pos">2,8%</td></tr>');
+      html += headerRowFC + '<tr class="kpi-group"><td colspan="' + nCol + '">Piezas por Tote (#unidades/#totes)</td></tr>' + filas(tote, false);
+      html += (anio === '2025' ? '<tr class="total-row"><td>Total</td><td>—</td><td class="num">5,5</td><td class="num">5,3</td><td class="num">—</td></tr>' : anio === '2026' ? '<tr class="total-row"><td>Total</td><td>—</td><td class="num">5,9</td></tr>' : '<tr class="total-row"><td>Total</td><td>—</td><td class="num">5,5</td><td class="num">5,3</td><td class="num">5,9</td><td class="num delta-pos">7,3%</td><td class="num delta-pos">11,3%</td></tr>');
+      html += headerRowFC + '<tr class="kpi-group"><td colspan="' + nCol + '">Share Retiros · por FC</td></tr>' + filas(share, true);
+      html += (anio === '2025' ? '<tr class="total-row"><td>Total</td><td>—</td><td class="num">68,9%</td><td class="num">63,7%</td><td class="num">—</td></tr>' : anio === '2026' ? '<tr class="total-row"><td>Total</td><td>—</td><td class="num">35,4%</td></tr>' : '<tr class="total-row"><td>Total</td><td>—</td><td class="num">68,9%</td><td class="num">63,7%</td><td class="num">35,4%</td><td class="num delta-neg">-48,7%</td><td class="num delta-neg">-44,5%</td></tr>');
+      thead.innerHTML = headerRowFC;
+      tbody.innerHTML = html;
+    }
+    function aplicarFiltros() {
+      var anio = (document.getElementById('anio') && document.getElementById('anio').value) || 'Todos';
+      var site = document.getElementById('site').value;
+      var fc = document.getElementById('fc').value;
+      var todosLosFC = datosPickingFC.concat(datosPackingFC).concat(datosToteFC).concat(datosShareFC);
+      var sitioDelFC = null;
+      if (fc) { for (var k = 0; k < todosLosFC.length; k++) { if (todosLosFC[k][1] === fc) { sitioDelFC = todosLosFC[k][0]; break; } } }
+      var siteParaResumen = site || sitioDelFC;
+      updateKpiCards(site, fc, anio);
+      renderResumenTable(anio, siteParaResumen);
+      renderTablaFC(site, fc, anio);
+    }
+    function llenarFiltroFC(siteFilter) {
+      var todos = datosPickingFC.concat(datosPackingFC).concat(datosToteFC).concat(datosShareFC);
+      var unicos = {};
+      for (var i = 0; i < todos.length; i++) {
+        var s = todos[i][0], f = todos[i][1];
+        if (siteFilter && s !== siteFilter) continue;
+        if (!unicos[f]) unicos[f] = s;
+      }
+      var fcs = Object.keys(unicos).sort();
+      var sel = document.getElementById('fc');
+      var valorActual = sel.value;
+      sel.innerHTML = '<option value="">Todos</option>';
+      for (var j = 0; j < fcs.length; j++) {
+        var opt = document.createElement('option');
+        opt.value = fcs[j];
+        opt.textContent = fcs[j];
+        sel.appendChild(opt);
+      }
+      if (valorActual && fcs.indexOf(valorActual) !== -1) sel.value = valorActual;
+    }
+    function fechaHoy() {
+      var d = new Date();
+      return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      var hoy = fechaHoy();
+      var elNota = document.getElementById('fecha-hoy-nota');
+      var elFooter = document.getElementById('fecha-hoy-footer');
+      if (elNota) elNota.textContent = hoy;
+      if (elFooter) elFooter.textContent = hoy;
+      var anio = (document.getElementById('anio') && document.getElementById('anio').value) || 'Todos';
+      llenarFiltroFC('');
+      renderResumenTable(anio, '');
+      renderTablaFC('', '', anio);
+      updateKpiCards('', '', anio);
+      document.getElementById('anio').addEventListener('change', aplicarFiltros);
+      document.getElementById('site').addEventListener('change', function() { llenarFiltroFC(this.value); aplicarFiltros(); });
+      document.getElementById('fc').addEventListener('change', aplicarFiltros);
+    });
+    function descargarCSV() {
+      var table = document.getElementById('tabla-kpis');
+      var rows = table.querySelectorAll('tr');
+      var csv = [];
+      for (var i = 0; i < rows.length; i++) {
+        var cells = rows[i].querySelectorAll('th, td');
+        var row = [];
+        for (var j = 0; j < cells.length; j++) row.push('"' + (cells[j].textContent || '').trim().replace(/"/g, '""') + '"');
+        csv.push(row.join(','));
+      }
+      var table2 = document.getElementById('tabla-fc');
+      if (table2) {
+        var rows2 = table2.querySelectorAll('tr');
+        for (var i = 0; i < rows2.length; i++) {
+          var cells = rows2[i].querySelectorAll('th, td');
+          var row = [];
+          for (var j = 0; j < cells.length; j++) row.push('"' + (cells[j].textContent || '').trim().replace(/"/g, '""') + '"');
+          csv.push(row.join(','));
+        }
+      }
+      var blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'kpis_pre_post_centralizacion_' + new Date().toISOString().slice(0,10) + '.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+  </script>
+</body>
+</html>
