@@ -220,10 +220,15 @@
       </table>
     </div>
 
-    <h2>Qué incluye Pre y Post implementación</h2>
+    <h2>Lógica de métricas</h2>
     <div class="note" style="margin-bottom: 24px;">
-      <strong>Pre-implementación (p1: 01 Oct–30 Nov 2025; p2: 01–31 Dic 2025):</strong> solo procesos <em>withdrawals</em> (retiros).<br>
-      <strong>Post-implementación (p3: 19 Ene – <span id="fecha-fin-post-texto"></span>):</strong> desde el <strong>19/01/2026</strong> se suman los procesos <em>disposal</em>. La fecha de fin del post es la del día en que se ejecutó la última actualización (las queries usan hasta hoy; al pedir «Actualizá los datos» se vuelven a correr y se actualiza el reporte). Es decir: Picking = picking withdrawal + picking disposal; Packing = packing withdrawal + packing disposal (cuando aplique). Misma fórmula de productividad en todos los casos.
+      <strong>Pre-implementación (P1: 01 Oct–30 Nov 2025; P2: 01–31 Dic 2025):</strong> solo procesos <em>withdrawals</em> (retiros).<br>
+      <strong>Post-implementación (P3: 19 Ene – <span id="fecha-fin-post-texto"></span>):</strong> desde el <strong>19/01/2026</strong> se suman los procesos <em>disposal</em>. La fecha de fin del post es la del día de la última actualización.<br><br>
+      <strong>Resumen por métrica (filtros y fórmula):</strong><br>
+      • <strong>Productividad efectiva (Picking):</strong> solo procesos <em>picking</em>. Pre: picking_withdrawals. Post: picking_withdrawals + picking_disposal. Fórmula: SUM(UNITS)/SUM(P_TIME).<br>
+      • <strong>Productividad efectiva (Packing):</strong> solo procesos <em>packing</em>. Pre: packing_withdrawals. Post: packing_withdrawals + packing_disposal. Fórmula: SUM(UNITS)/SUM(P_TIME).<br>
+      • <strong>Piezas por Tote:</strong> #unidades/#totes. Filtro Process Path: solo rutas con PP_WITHDRAWAL_SINGLE_SKU, PP_WITHDRAWAL_DIRECT_PACKING, PP_WITHDRAWAL_SORT. Fórmula: SUM(UNIT_QTY_PICKED)/SUM(TOTES_PER_CART_USED).<br>
+      • <strong>Share Retiros:</strong> solo procesos <em>packing</em> (packing_withdrawals, packing_disposal). Share % = 100×Withdrawals/(Withdrawals+Disposal). Antes de ~9 Dic no había disposal → 100%.
     </div>
 
     <h2>Fuentes de datos</h2>
