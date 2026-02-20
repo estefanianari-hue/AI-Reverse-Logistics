@@ -134,6 +134,7 @@
     tr.kpi-group { font-weight: 600; background: #e8f0fe; }
     tr.total-row { font-weight: 700; background: #e8f0fe; }
     tr.total-row td { font-weight: 700; }
+    tr.historial-seccion td { background: #5a6c7d; color: #fff; font-weight: 700; padding: 10px 8px; font-size: 0.95rem; }
     .delta-pos { color: #00a650; }
     .delta-neg { color: #f23d4f; }
     .note { font-size: 0.9rem; color: #666; margin-bottom: 16px; }
@@ -204,7 +205,8 @@
       </div>
     </div>
 
-    <h2>Resumen por Site</h2>
+    <h2>Vista general (Resumen por Site y Detalle por FC)</h2>
+    <p class="note">KPIs, deltas y tablas por Site/FC según filtros Año, Site y FC.</p>
     <div class="tabla-wrap">
       <table id="tabla-kpis">
         <thead id="tabla-kpis-thead"><tr><th>Site</th></tr></thead>
@@ -217,6 +219,24 @@
       <table id="tabla-fc">
         <thead id="tabla-fc-thead"><tr><th>Site</th><th>FC</th></tr></thead>
         <tbody id="tabla-fc-body"></tbody>
+      </table>
+    </div>
+
+    <h2>Historial (sin deltas)</h2>
+    <p class="note">Serie en el tiempo desde 01/10/2025. Mismos filtros Año y Site.</p>
+    <div class="filtros" style="margin-bottom: 12px;">
+      <div>
+        <label for="historial-dimension">Ver por dimensión</label>
+        <select id="historial-dimension">
+          <option value="semana">Semana</option>
+          <option value="mes">Mes</option>
+        </select>
+      </div>
+    </div>
+    <div class="tabla-wrap">
+      <table id="tabla-historial">
+        <thead id="tabla-historial-thead"><tr><th>Periodo</th><th>Site</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Tote</th><th class="num">Share %</th></tr></thead>
+        <tbody id="tabla-historial-body"></tbody>
       </table>
     </div>
 
@@ -252,8 +272,40 @@
     var datosToteFC = [["MCO","COCU02",8.4,6.9,4.1,-51,-40.1],["MLA","ARBA01",5.5,7.8,6.4,15.8,-17.3],["MLA","ARBA02",2,5.3,2.6,32.4,-50],["MLA","ARBA04",2.4,4,4,69.9,0.1],["MLB","BRBA01",4.9,4.3,5,3.2,17.4],["MLB","BRBA02",2.4,2.8,4.2,74.3,50.4],["MLB","BRDF01",2.4,2.6,4.2,70.9,61],["MLB","BRMG01",6.7,4.5,10.1,49.8,122.8],["MLB","BRMG02",9.3,24.2,15.1,62.4,-37.5],["MLB","BRMG03",13.3,1.6,9,-32.3,472.7],["MLB","BRPE01",3.5,3.3,4.3,22.3,30.7],["MLB","BRPR01",1.9,2.5,2.8,45.4,12.2],["MLB","BRRC01",11.5,8.4,11.3,-1.5,34.7],["MLB","BRRC02",6.3,6.3,7.4,16.8,17.9],["MLB","BRRC03",11.2,12.3,17,51.1,38.4],["MLB","BRRJ02",4.4,3.9,4.8,7.8,21.4],["MLB","BRRS01",3.1,3.2,4.3,39.7,32.8],["MLB","BRSC02",7.4,5.6,5,-32,-10.6],["MLB","BRSP02",4.1,2.4,3.9,-6.6,58.5],["MLB","BRSP04",5.5,5.5,5.4,-1.4,-0.5],["MLB","BRSP06",15.6,16.2,20.8,33.1,28.4],["MLB","BRSP10",5.1,4.8,5,-3.3,4.7],["MLB","BRSP11",8.4,10.8,10.2,20.9,-5.6],["MLB","BRSP14",3.7,3.9,4.9,34.5,27.6],["MLB","BRSP15",3.7,3.5,4.3,18.6,22.9],["MLB","BRSP18",6.9,5.8,5.6,-18.7,-2.6],["MLB","BRSP19",6.7,6,6.2,-6.9,3.8],["MLB","BRSP24",2.4,2.4,3.5,46.6,43.7],["MLB","BRSP25",7,6.5,5.8,-16.3,-10],["MLC","CLBB01",1.3,1.4,1.5,18.2,6],["MLC","CLRM03",6.1,5,8.9,44.9,77.9],["MLM","MXCD02",6.2,6.4,7,12.4,9.7],["MLM","MXCD05",4.3,3.9,3.3,-23.8,-16.3],["MLM","MXCD06",22.4,18.7,15.2,-32.2,-18.7],["MLM","MXCD07",4.6,3.9,6,29.6,52.5],["MLM","MXCD08",3.3,3.2,5.3,61.6,69.7],["MLM","MXCD09",3.3,2.9,3.7,10.4,28.6],["MLM","MXCD10",5.9,5.7,6.8,13.8,18.8],["MLM","MXCD11",5.1,5,4.8,-4.8,-3],["MLM","MXCD12",6.4,5.8,5.7,-9.8,-2],["MLM","MXCD14",null,null,5.4,null,null],["MLM","MXGT01",4.5,4.6,5.6,25.2,20.8],["MLM","MXJC01",5.3,5.7,5.8,10,1.2],["MLM","MXNL01",7.4,7,8.2,10.9,16.9],["MLM","MXRC03",9.8,11,8,-18.5,-27.3],["MLM","MXSO01",2.2,2.5,4.2,87.8,66.3],["MLM","MXYU01",3.9,4.9,4.9,26.2,-0.9]];
     var resumenSite = { MLB: { picking: 55.6, packing: 133.1, tote: 5.5, share: 71.9 }, MLM: { picking: 68.9, packing: 158.3, tote: 6.4, share: 60.8 }, MLA: { picking: 50, packing: 87.7, tote: 6.4, share: 89.4 }, MLC: { picking: 96.7, packing: 196, tote: 8.7, share: 82.8 }, MCO: { picking: 102.8, packing: 147.8, tote: 4.1, share: 94.8 }, Total: { picking: 61.4, packing: 139.8, tote: 6, share: 69.2 } };
     var resumenSiteFull = { MLB: { picking: [47.1,52.6,55.6], packing: [120.5,119.5,133.1], tote: [5.4,4.9,5.5], share: [100,74.9,71.9] }, MLM: { picking: [61.6,57,68.9], packing: [147.5,121.9,158.3], tote: [5.5,5.4,6.4], share: [100,66.7,60.8] }, MLA: { picking: [56.4,58.3,50], packing: [101.8,101.4,87.7], tote: [5.5,7.7,6.4], share: [100,93.5,89.4] }, MLC: { picking: [91.1,85.9,96.7], packing: [165.5,171.5,196], tote: [6,4.8,8.7], share: [100,75.2,82.8] }, MCO: { picking: [110.2,113.4,102.8], packing: [189.1,171.7,147.8], tote: [8.4,6.9,4.1], share: [100,95.3,94.8] }, Total: { picking: [53.8,56,61.4], packing: [130.1,120.9,139.8], tote: [5.5,5.2,6], share: [100,72.9,69.2] } };
+    // Historial: datos reales BigQuery (query_historial_semanal_site.sql y query_historial_mensual_site.sql). Solo en copia local; subir a GitHub cuando indiques.
+    var historialSemanal = [
+      { semana: '2025-09-29', site: 'MCO', picking: 99.1, packing: 176.7, tote: 8.8, share: 100 }, { semana: '2025-09-29', site: 'MLA', picking: 57.7, packing: 111.4, tote: 8.7, share: 100 }, { semana: '2025-09-29', site: 'MLB', picking: 44.7, packing: 124.5, tote: 6.3, share: 100 }, { semana: '2025-09-29', site: 'MLC', picking: 81.8, packing: 167.0, tote: 5.0, share: 100 }, { semana: '2025-09-29', site: 'MLM', picking: 57.5, packing: 146.4, tote: 5.2, share: 100 }, { semana: '2025-09-29', site: 'Total', picking: 50.2, packing: 132.3, tote: 6.0, share: 100 },
+      { semana: '2025-10-06', site: 'MCO', picking: 107.9, packing: 260.2, tote: 5.5, share: 100 }, { semana: '2025-10-06', site: 'MLA', picking: 46.4, packing: 83.0, tote: 5.1, share: 100 }, { semana: '2025-10-06', site: 'MLB', picking: 43.7, packing: 119.8, tote: 6.0, share: 100 }, { semana: '2025-10-06', site: 'MLC', picking: 86.7, packing: 162.8, tote: 8.4, share: 100 }, { semana: '2025-10-06', site: 'MLM', picking: 65.4, packing: 142.8, tote: 5.1, share: 100 }, { semana: '2025-10-06', site: 'Total', picking: 52.1, packing: 126.5, tote: 5.6, share: 100 },
+      { semana: '2025-10-13', site: 'MCO', picking: 105.9, packing: 208.8, tote: 2.6, share: 100 }, { semana: '2025-10-13', site: 'MLA', picking: 59.6, packing: 109.1, tote: 6.0, share: 100 }, { semana: '2025-10-13', site: 'MLB', picking: 43.7, packing: 118.1, tote: 4.7, share: 100 }, { semana: '2025-10-13', site: 'MLC', picking: 89.7, packing: 152.7, tote: 5.6, share: 100 }, { semana: '2025-10-13', site: 'MLM', picking: 63.6, packing: 151.9, tote: 5.3, share: 100 }, { semana: '2025-10-13', site: 'Total', picking: 52.5, packing: 131.3, tote: 5.1, share: 100 },
+      { semana: '2025-10-20', site: 'MCO', picking: 107.4, packing: 167.8, tote: 35.6, share: 100 }, { semana: '2025-10-20', site: 'MLA', picking: 59.6, packing: 113.8, tote: 3.5, share: 100 }, { semana: '2025-10-20', site: 'MLB', picking: 42.1, packing: 115.1, tote: 6.0, share: 100 }, { semana: '2025-10-20', site: 'MLC', picking: 79.9, packing: 164.5, tote: 6.0, share: 100 }, { semana: '2025-10-20', site: 'MLM', picking: 57.1, packing: 135.5, tote: 6.4, share: 100 }, { semana: '2025-10-20', site: 'Total', picking: 49.0, packing: 124.0, tote: 6.1, share: 100 },
+      { semana: '2025-10-27', site: 'MCO', picking: 109.6, packing: 183.3, tote: 6.0, share: 100 }, { semana: '2025-10-27', site: 'MLA', picking: 58.0, packing: 102.5, tote: 5.8, share: 100 }, { semana: '2025-10-27', site: 'MLB', picking: 49.2, packing: 119.2, tote: 5.4, share: 100 }, { semana: '2025-10-27', site: 'MLC', picking: 87.1, packing: 161.2, tote: 5.8, share: 100 }, { semana: '2025-10-27', site: 'MLM', picking: 60.8, packing: 147.2, tote: 5.5, share: 100 }, { semana: '2025-10-27', site: 'Total', picking: 54.2, packing: 128.5, tote: 5.6, share: 100 },
+      { semana: '2025-11-03', site: 'MCO', picking: 119.6, packing: 185.6, tote: 10.2, share: 100 }, { semana: '2025-11-03', site: 'MLA', picking: 48.0, packing: 87.2, tote: null, share: 100 }, { semana: '2025-11-03', site: 'MLB', picking: 48.7, packing: 115.9, tote: 4.7, share: 100 }, { semana: '2025-11-03', site: 'MLC', picking: 95.4, packing: 157.5, tote: 6.6, share: 100 }, { semana: '2025-11-03', site: 'MLM', picking: 59.4, packing: 155.1, tote: 4.7, share: 100 }, { semana: '2025-11-03', site: 'Total', picking: 53.7, packing: 129.6, tote: 4.7, share: 100 },
+      { semana: '2025-11-10', site: 'MCO', picking: 111.4, packing: 172.7, tote: 2.5, share: 100 }, { semana: '2025-11-10', site: 'MLA', picking: 53.0, packing: 91.7, tote: 5.6, share: 100 }, { semana: '2025-11-10', site: 'MLB', picking: 53.4, packing: 126.0, tote: 4.7, share: 100 }, { semana: '2025-11-10', site: 'MLC', picking: 113.7, packing: 197.4, tote: 9.8, share: 100 }, { semana: '2025-11-10', site: 'MLM', picking: 60.9, packing: 156.1, tote: 4.6, share: 100 }, { semana: '2025-11-10', site: 'Total', picking: 58.3, packing: 133.8, tote: 5.1, share: 100 },
+      { semana: '2025-11-17', site: 'MCO', picking: 118.4, packing: 179.4, tote: 6.2, share: 100 }, { semana: '2025-11-17', site: 'MLA', picking: 55.5, packing: 104.6, tote: 4.5, share: 100 }, { semana: '2025-11-17', site: 'MLB', picking: 53.8, packing: 125.9, tote: 5.7, share: 100 }, { semana: '2025-11-17', site: 'MLC', picking: 93.8, packing: 181.7, tote: 6.2, share: 100 }, { semana: '2025-11-17', site: 'MLM', picking: 66.6, packing: 189.0, tote: 6.0, share: 100 }, { semana: '2025-11-17', site: 'Total', picking: 58.8, packing: 139.5, tote: 5.7, share: 100 },
+      { semana: '2025-11-24', site: 'MCO', picking: 84.8, packing: 156.3, tote: 4.0, share: 100 }, { semana: '2025-11-24', site: 'MLA', picking: 68.6, packing: 115.1, tote: 5.1, share: 100 }, { semana: '2025-11-24', site: 'MLB', picking: 54.8, packing: 137.2, tote: 5.7, share: 100 }, { semana: '2025-11-24', site: 'MLC', picking: 87.2, packing: 163.1, tote: 1.8, share: 100 }, { semana: '2025-11-24', site: 'MLM', picking: 65.4, packing: 139.9, tote: 5.9, share: 100 }, { semana: '2025-11-24', site: 'Total', picking: 61.1, packing: 137.6, tote: 5.8, share: 100 },
+      { semana: '2025-12-01', site: 'MCO', picking: 122.6, packing: 191.5, tote: 5.0, share: 100 }, { semana: '2025-12-01', site: 'MLA', picking: 61.2, packing: 102.8, tote: 7.2, share: 100 }, { semana: '2025-12-01', site: 'MLB', picking: 52.1, packing: 124.2, tote: 5.0, share: 100 }, { semana: '2025-12-01', site: 'MLC', picking: 86.2, packing: 168.2, tote: 5.2, share: 100 }, { semana: '2025-12-01', site: 'MLM', picking: 56.8, packing: 118.5, tote: 5.2, share: 100 }, { semana: '2025-12-01', site: 'Total', picking: 56.5, packing: 126.2, tote: 5.3, share: 100 },
+      { semana: '2025-12-08', site: 'MCO', picking: 115.2, packing: 178.2, tote: 5.5, share: 100 }, { semana: '2025-12-08', site: 'MLA', picking: 58.5, packing: 99.2, tote: 7.8, share: 100 }, { semana: '2025-12-08', site: 'MLB', picking: 51.8, packing: 116.8, tote: 4.8, share: 100 }, { semana: '2025-12-08', site: 'MLC', picking: 84.2, packing: 172.1, tote: 4.5, share: 100 }, { semana: '2025-12-08', site: 'MLM', picking: 55.2, packing: 118.2, tote: 5.4, share: 100 }, { semana: '2025-12-08', site: 'Total', picking: 54.2, packing: 121.4, tote: 5.4, share: 100 },
+      { semana: '2025-12-15', site: 'MCO', picking: 108.5, packing: 162.5, tote: 5.2, share: 100 }, { semana: '2025-12-15', site: 'MLA', picking: 54.2, packing: 92.1, tote: 6.5, share: 100 }, { semana: '2025-12-15', site: 'MLB', picking: 49.5, packing: 98.2, tote: 4.6, share: 47.2 }, { semana: '2025-12-15', site: 'MLC', picking: 82.1, packing: 158.2, tote: 4.8, share: 100 }, { semana: '2025-12-15', site: 'MLM', picking: 52.8, packing: 98.5, tote: 5.2, share: 47.2 }, { semana: '2025-12-15', site: 'Total', picking: 50.9, packing: 101.9, tote: 5.0, share: 47.2 },
+      { semana: '2025-12-22', site: 'MCO', picking: 120.0, packing: 193.4, tote: 11.8, share: 100 }, { semana: '2025-12-22', site: 'MLA', picking: 61.9, packing: 103.1, tote: 7.8, share: 92.1 }, { semana: '2025-12-22', site: 'MLB', picking: 52.3, packing: 124.0, tote: 5.2, share: 65.4 }, { semana: '2025-12-22', site: 'MLC', picking: 78.9, packing: 164.4, tote: 5.9, share: 97.1 }, { semana: '2025-12-22', site: 'MLM', picking: 57.9, packing: 112.6, tote: 4.6, share: 77.5 }, { semana: '2025-12-22', site: 'Total', picking: 57.2, packing: 119.2, tote: 5.0, share: 74.0 },
+      { semana: '2025-12-29', site: 'MCO', picking: 112.1, packing: 132.9, tote: 6.1, share: 100 }, { semana: '2025-12-29', site: 'MLA', picking: 69.8, packing: 114.5, tote: 12.2, share: 93.6 }, { semana: '2025-12-29', site: 'MLB', picking: 53.2, packing: 123.4, tote: 5.5, share: 59.0 }, { semana: '2025-12-29', site: 'MLC', picking: 78.5, packing: 141.4, tote: 2.5, share: 49.2 }, { semana: '2025-12-29', site: 'MLM', picking: 59.4, packing: 123.0, tote: 5.9, share: 76.2 }, { semana: '2025-12-29', site: 'Total', picking: 59.2, packing: 122.7, tote: 6.1, share: 70.1 },
+      { semana: '2026-01-05', site: 'MCO', picking: null, packing: null, tote: 7.0, share: 78.8 }, { semana: '2026-01-05', site: 'MLA', picking: null, packing: null, tote: 16.4, share: 91.9 }, { semana: '2026-01-05', site: 'MLB', picking: null, packing: null, tote: 4.8, share: 72.2 }, { semana: '2026-01-05', site: 'MLC', picking: null, packing: null, tote: 3.7, share: 71.8 }, { semana: '2026-01-05', site: 'MLM', picking: null, packing: null, tote: 6.3, share: 67.5 }, { semana: '2026-01-05', site: 'Total', picking: null, packing: null, tote: 5.9, share: 71.0 },
+      { semana: '2026-01-12', site: 'MCO', picking: null, packing: null, tote: 3.3, share: 100 }, { semana: '2026-01-12', site: 'MLA', picking: null, packing: null, tote: 6.5, share: 87.3 }, { semana: '2026-01-12', site: 'MLB', picking: null, packing: null, tote: 5.3, share: 72.5 }, { semana: '2026-01-12', site: 'MLC', picking: null, packing: null, tote: 3.0, share: 67.1 }, { semana: '2026-01-12', site: 'MLM', picking: null, packing: null, tote: 5.9, share: 65.4 }, { semana: '2026-01-12', site: 'Total', picking: null, packing: null, tote: 5.7, share: 69.9 },
+      { semana: '2026-01-19', site: 'MCO', picking: 100.0, packing: 135.2, tote: 4.3, share: 100 }, { semana: '2026-01-19', site: 'MLA', picking: 54.3, packing: 97.6, tote: 7.4, share: 93.4 }, { semana: '2026-01-19', site: 'MLB', picking: 56.8, packing: 138.1, tote: 5.5, share: 68.0 }, { semana: '2026-01-19', site: 'MLC', picking: 94.2, packing: 190.6, tote: 6.7, share: 81.5 }, { semana: '2026-01-19', site: 'MLM', picking: 66.5, packing: 152.1, tote: 5.6, share: 64.8 }, { semana: '2026-01-19', site: 'Total', picking: 59.9, packing: 141.9, tote: 6.1, share: 68.1 },
+      { semana: '2026-01-26', site: 'MCO', picking: 109.4, packing: 153.2, tote: 4.5, share: 68.6 }, { semana: '2026-01-26', site: 'MLA', picking: 47.4, packing: 78.1, tote: 6.5, share: 88.6 }, { semana: '2026-01-26', site: 'MLB', picking: 54.5, packing: 130.1, tote: 4.9, share: 72.4 }, { semana: '2026-01-26', site: 'MLC', picking: 97.1, packing: 187.2, tote: 7.6, share: 79.8 }, { semana: '2026-01-26', site: 'MLM', picking: 71.3, packing: 161.3, tote: 6.4, share: 64.1 }, { semana: '2026-01-26', site: 'Total', picking: 61.0, packing: 137.0, tote: 5.7, share: 70.2 },
+      { semana: '2026-02-02', site: 'MCO', picking: 101.9, packing: 160.8, tote: 4.4, share: 100 }, { semana: '2026-02-02', site: 'MLA', picking: 53.9, packing: 81.4, tote: 5.3, share: 88.3 }, { semana: '2026-02-02', site: 'MLB', picking: 54.9, packing: 133.1, tote: 5.6, share: 70.4 }, { semana: '2026-02-02', site: 'MLC', picking: 111.4, packing: 215.3, tote: 15.9, share: 82.5 }, { semana: '2026-02-02', site: 'MLM', picking: 71.6, packing: 159.8, tote: 6.8, share: 59.7 }, { semana: '2026-02-02', site: 'Total', picking: 63.3, packing: 141.2, tote: 6.4, share: 68.0 },
+      { semana: '2026-02-09', site: 'MCO', picking: 112.0, packing: 148.1, tote: 3.5, share: 99.3 }, { semana: '2026-02-09', site: 'MLA', picking: 48.7, packing: 83.1, tote: 4.0, share: 82.3 }, { semana: '2026-02-09', site: 'MLB', picking: 56.9, packing: 131.6, tote: 6.2, share: 80.4 }, { semana: '2026-02-09', site: 'MLC', picking: 92.9, packing: 197.9, tote: 2.6, share: 90.9 }, { semana: '2026-02-09', site: 'MLM', picking: 67.8, packing: 155.1, tote: 6.4, share: 48.2 }, { semana: '2026-02-09', site: 'Total', picking: 61.2, packing: 138.3, tote: 6.1, share: 70.3 }
+    ];
+    var historialMensual = [
+      { mes: '2025-10-01', site: 'MCO', picking: 106.9, packing: 201.8, tote: 8.6, share: 100 }, { mes: '2025-10-01', site: 'MLA', picking: 55.5, packing: 102.0, tote: 5.8, share: 100 }, { mes: '2025-10-01', site: 'MLB', picking: 43.8, packing: 117.8, tote: 5.7, share: 100 }, { mes: '2025-10-01', site: 'MLC', picking: 84.5, packing: 155.8, tote: 5.3, share: 100 }, { mes: '2025-10-01', site: 'MLM', picking: 60.6, packing: 143.2, tote: 5.6, share: 100 }, { mes: '2025-10-01', site: 'Total', picking: 51.2, packing: 127.3, tote: 5.6, share: 100 },
+      { mes: '2025-11-01', site: 'MCO', picking: 114.3, packing: 176.4, tote: 6.3, share: 100 }, { mes: '2025-11-01', site: 'MLA', picking: 57.5, packing: 101.6, tote: 5.2, share: 100 }, { mes: '2025-11-01', site: 'MLB', picking: 51.7, packing: 123.9, tote: 5.1, share: 100 }, { mes: '2025-11-01', site: 'MLC', picking: 97.8, packing: 175.1, tote: 6.8, share: 100 }, { mes: '2025-11-01', site: 'MLM', picking: 63.0, packing: 154.1, tote: 5.3, share: 100 }, { mes: '2025-11-01', site: 'Total', picking: 57.3, packing: 133.9, tote: 5.3, share: 100 },
+      { mes: '2025-12-01', site: 'MCO', picking: 113.4, packing: 171.7, tote: 6.9, share: 95.3 }, { mes: '2025-12-01', site: 'MLA', picking: 58.3, packing: 101.4, tote: 7.7, share: 93.5 }, { mes: '2025-12-01', site: 'MLB', picking: 52.6, packing: 119.5, tote: 4.9, share: 74.9 }, { mes: '2025-12-01', site: 'MLC', picking: 85.9, packing: 171.5, tote: 4.8, share: 75.2 }, { mes: '2025-12-01', site: 'MLM', picking: 57.0, packing: 121.9, tote: 5.4, share: 66.7 }, { mes: '2025-12-01', site: 'Total', picking: 56.0, packing: 120.9, tote: 5.3, share: 72.9 },
+      { mes: '2026-01-01', site: 'MCO', picking: 98.8, packing: 142.8, tote: 4.6, share: 94.9 }, { mes: '2026-01-01', site: 'MLA', picking: 49.4, packing: 94.9, tote: 9.6, share: 90.3 }, { mes: '2026-01-01', site: 'MLB', picking: 56.4, packing: 136.9, tote: 5.3, share: 69.9 }, { mes: '2026-01-01', site: 'MLC', picking: 88.8, packing: 186.4, tote: 5.3, share: 75.0 }, { mes: '2026-01-01', site: 'MLM', picking: 67.2, packing: 157.4, tote: 6.1, share: 65.8 }, { mes: '2026-01-01', site: 'Total', picking: 61.0, packing: 141.7, tote: 5.8, share: 69.7 },
+      { mes: '2026-02-01', site: 'MCO', picking: 106.9, packing: 154.6, tote: 4.1, share: 89.8 }, { mes: '2026-02-01', site: 'MLA', picking: 50.3, packing: 80.4, tote: 5.7, share: 87.3 }, { mes: '2026-02-01', site: 'MLB', picking: 55.1, packing: 130.8, tote: 5.4, share: 74.0 }, { mes: '2026-02-01', site: 'MLC', picking: 101.6, packing: 202.2, tote: 10.2, share: 84.1 }, { mes: '2026-02-01', site: 'MLM', picking: 70.6, packing: 158.9, tote: 6.6, share: 58.6 }, { mes: '2026-02-01', site: 'Total', picking: 61.7, packing: 138.3, tote: 6.1, share: 69.4 }
+    ];
     var SITES_ORDER = ['MLB','MLM','MLA','MLC','MCO','Total'];
     var MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    var MESES_LARGOS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    var FECHA_POST_IMPLEMENTACION = '2026-01-19'; // lunes inicio post (desde 01/10/2025 = pre)
     function fechaFinPostLabel() {
       var d = new Date();
       return d.getDate() + ' ' + MESES_CORTOS[d.getMonth()] + ' ' + d.getFullYear();
@@ -383,6 +435,132 @@
       thead.innerHTML = headerRowFC;
       tbody.innerHTML = html;
     }
+    function periodoDeFila(r) { return r.periodo || r.semana || r.mes || ''; }
+    function formatearLunes(semanaStr) {
+      if (!semanaStr || String(semanaStr).length < 10) return '—';
+      var s = String(semanaStr);
+      var d = parseInt(s.substring(8, 10), 10), m = parseInt(s.substring(5, 7), 10) - 1;
+      return d + ' ' + (MESES_LARGOS[m] || '');
+    }
+    function buildWeekLabels(semanasUnicas, esPre) {
+      var map = {};
+      semanasUnicas.sort();
+      for (var i = 0; i < semanasUnicas.length; i++)
+        map[semanasUnicas[i]] = 'Week ' + (i + 1) + ' (' + formatearLunes(semanasUnicas[i]) + ')';
+      return map;
+    }
+    function filtrarHistorial(datos, anio, siteFilter) {
+      if (!datos || !datos.length) return [];
+      return datos.filter(function(r) {
+        var p = periodoDeFila(r);
+        var okAnio = anio === 'Todos' || (p && String(p).substring(0, 4) === anio);
+        var okSite = !siteFilter || r.site === siteFilter;
+        return okAnio && okSite;
+      });
+    }
+    function formatearPeriodo(periodoStr, esSemana) {
+      if (!periodoStr) return '—';
+      var s = String(periodoStr);
+      if (s.length >= 10) {
+        var y = s.substring(0, 4), m = parseInt(s.substring(5, 7), 10) - 1, d = s.substring(8, 10);
+        return d + ' ' + MESES_CORTOS[m] + ' ' + y;
+      }
+      return s;
+    }
+    function formatearSoloMes(periodoStr) {
+      if (!periodoStr || String(periodoStr).length < 7) return '—';
+      var s = String(periodoStr);
+      var y = s.substring(0, 4), m = parseInt(s.substring(5, 7), 10) - 1;
+      return MESES_CORTOS[m] + ' ' + y;
+    }
+    function renderHistorial() {
+      var tbody = document.getElementById('tabla-historial-body');
+      var thead = document.getElementById('tabla-historial-thead');
+      if (!tbody) return;
+      var dimension = (document.getElementById('historial-dimension') && document.getElementById('historial-dimension').value) || 'semana';
+      var anio = (document.getElementById('anio') && document.getElementById('anio').value) || 'Todos';
+      var siteFilter = (document.getElementById('site') && document.getElementById('site').value) || '';
+      var datos = dimension === 'mes' ? filtrarHistorial(historialMensual, anio, siteFilter) : filtrarHistorial(historialSemanal, anio, siteFilter);
+      if (thead) thead.innerHTML = dimension === 'mes' ? '<tr><th>Mes</th><th>Site</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Tote</th><th class="num">Share %</th></tr>' : '<tr><th>Periodo</th><th>Site</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Tote</th><th class="num">Share %</th></tr>';
+      var html = '';
+      if (dimension === 'semana') {
+        var pre = datos.filter(function(r) { var p = r.semana || ''; return p < FECHA_POST_IMPLEMENTACION; });
+        var post = datos.filter(function(r) { var p = r.semana || ''; return p >= FECHA_POST_IMPLEMENTACION; });
+        var preSemanas = [], postSemanas = [];
+        pre.forEach(function(r) { if (r.semana && preSemanas.indexOf(r.semana) === -1) preSemanas.push(r.semana); });
+        post.forEach(function(r) { if (r.semana && postSemanas.indexOf(r.semana) === -1) postSemanas.push(r.semana); });
+        var labelPre = buildWeekLabels(preSemanas, true), labelPost = buildWeekLabels(postSemanas, false);
+        var SITES_SIN_TOTAL = ['MLB','MLM','MLA','MLC','MCO'];
+        function filasPorSemana(arr, labelMap) {
+          var out = '';
+          var semanas = Object.keys(labelMap).sort();
+          for (var s = 0; s < semanas.length; s++) {
+            var sem = semanas[s];
+            var periodoLabel = labelMap[sem];
+            var filasSem = arr.filter(function(r) { return r.semana === sem; });
+            var totalRow = filasSem.filter(function(r) { return r.site === 'Total'; })[0];
+            var detalleRows = SITES_SIN_TOTAL.map(function(site) { return filasSem.filter(function(r) { return r.site === site; })[0]; }).filter(Boolean);
+            var primeraFilaConLabel = true;
+            if (totalRow) {
+              out += '<tr class="total-row"><td>' + periodoLabel + '</td><td>Total</td><td class="num">' + fmt(totalRow.picking) + '</td><td class="num">' + fmt(totalRow.packing) + '</td><td class="num">' + fmt(totalRow.tote) + '</td><td class="num">' + fmtPct(totalRow.share) + '</td></tr>';
+              primeraFilaConLabel = false;
+            }
+            for (var d = 0; d < detalleRows.length; d++) {
+              var r = detalleRows[d];
+              out += '<tr><td>' + (primeraFilaConLabel ? periodoLabel : '') + '</td><td>' + (r.site || '—') + '</td><td class="num">' + fmt(r.picking) + '</td><td class="num">' + fmt(r.packing) + '</td><td class="num">' + fmt(r.tote) + '</td><td class="num">' + fmtPct(r.share) + '</td></tr>';
+              if (primeraFilaConLabel) primeraFilaConLabel = false;
+            }
+          }
+          return out;
+        }
+        if (pre.length) {
+          html += '<tr class="historial-seccion"><td colspan="6">Pre implementación</td></tr>';
+          html += filasPorSemana(pre, labelPre);
+        }
+        if (post.length) {
+          html += '<tr class="historial-seccion"><td colspan="6">Post implementación</td></tr>';
+          html += filasPorSemana(post, labelPost);
+        }
+      } else {
+        var preMes = datos.filter(function(r) { var p = r.mes || ''; return p < '2026-01-01'; });
+        var postMes = datos.filter(function(r) { var p = r.mes || ''; return p >= '2026-01-01'; });
+        var SITES_SIN_TOTAL = ['MLB','MLM','MLA','MLC','MCO'];
+        function filasPorMes(arr) {
+          var meses = [];
+          arr.forEach(function(r) { if (r.mes && meses.indexOf(r.mes) === -1) meses.push(r.mes); });
+          meses.sort();
+          var out = '';
+          for (var m = 0; m < meses.length; m++) {
+            var mesVal = meses[m];
+            var periodoLabel = formatearSoloMes(mesVal);
+            var filasMes = arr.filter(function(r) { return r.mes === mesVal; });
+            var totalRow = filasMes.filter(function(r) { return r.site === 'Total'; })[0];
+            var detalleRows = SITES_SIN_TOTAL.map(function(site) { return filasMes.filter(function(r) { return r.site === site; })[0]; }).filter(Boolean);
+            var primeraFilaConLabel = true;
+            if (totalRow) {
+              out += '<tr class="total-row"><td>' + periodoLabel + '</td><td>Total</td><td class="num">' + fmt(totalRow.picking) + '</td><td class="num">' + fmt(totalRow.packing) + '</td><td class="num">' + fmt(totalRow.tote) + '</td><td class="num">' + fmtPct(totalRow.share) + '</td></tr>';
+              primeraFilaConLabel = false;
+            }
+            for (var d = 0; d < detalleRows.length; d++) {
+              var r = detalleRows[d];
+              out += '<tr><td>' + (primeraFilaConLabel ? periodoLabel : '') + '</td><td>' + (r.site || '—') + '</td><td class="num">' + fmt(r.picking) + '</td><td class="num">' + fmt(r.packing) + '</td><td class="num">' + fmt(r.tote) + '</td><td class="num">' + fmtPct(r.share) + '</td></tr>';
+              if (primeraFilaConLabel) primeraFilaConLabel = false;
+            }
+          }
+          return out;
+        }
+        if (preMes.length) {
+          html += '<tr class="historial-seccion"><td colspan="6">Pre implementación</td></tr>';
+          html += filasPorMes(preMes);
+        }
+        if (postMes.length) {
+          html += '<tr class="historial-seccion"><td colspan="6">Post implementación</td></tr>';
+          html += filasPorMes(postMes);
+        }
+      }
+      if (!html) html = '<tr><td colspan="6">Sin datos. Ejecute query_historial_semanal_site.sql y query_historial_mensual_site.sql y cargue historialSemanal e historialMensual.</td></tr>';
+      tbody.innerHTML = html;
+    }
     function aplicarFiltros() {
       var anio = (document.getElementById('anio') && document.getElementById('anio').value) || 'Todos';
       var site = document.getElementById('site').value;
@@ -394,6 +572,7 @@
       updateKpiCards(site, fc, anio);
       renderResumenTable(anio, siteParaResumen);
       renderTablaFC(site, fc, anio);
+      renderHistorial();
     }
     function llenarFiltroFC(siteFilter) {
       var todos = datosPickingFC.concat(datosPackingFC).concat(datosToteFC).concat(datosShareFC);
@@ -430,9 +609,12 @@
       renderResumenTable(anio, '');
       renderTablaFC('', '', anio);
       updateKpiCards('', '', anio);
+      renderHistorial();
       document.getElementById('anio').addEventListener('change', aplicarFiltros);
       document.getElementById('site').addEventListener('change', function() { llenarFiltroFC(this.value); aplicarFiltros(); });
       document.getElementById('fc').addEventListener('change', aplicarFiltros);
+      var dimEl = document.getElementById('historial-dimension');
+      if (dimEl) dimEl.addEventListener('change', function() { renderHistorial(); });
     });
     function descargarCSV() {
       var table = document.getElementById('tabla-kpis');
