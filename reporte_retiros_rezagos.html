@@ -235,7 +235,7 @@
     </div>
     <div class="tabla-wrap">
       <table id="tabla-historial">
-        <thead id="tabla-historial-thead"><tr><th>Periodo</th><th>Site</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Tote</th><th class="num">Share %</th></tr></thead>
+        <thead id="tabla-historial-thead"><tr><th>Periodo</th><th>Site</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Unit/Tote</th><th class="num">Share %</th></tr></thead>
         <tbody id="tabla-historial-body"></tbody>
       </table>
     </div>
@@ -481,7 +481,7 @@
       var anio = (document.getElementById('anio') && document.getElementById('anio').value) || 'Todos';
       var siteFilter = (document.getElementById('site') && document.getElementById('site').value) || '';
       var datos = dimension === 'mes' ? filtrarHistorial(historialMensual, anio, siteFilter) : filtrarHistorial(historialSemanal, anio, siteFilter);
-      if (thead) thead.innerHTML = dimension === 'mes' ? '<tr><th>Mes</th><th>Site</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Tote</th><th class="num">Share %</th></tr>' : '<tr><th>Periodo</th><th>Site</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Tote</th><th class="num">Share %</th></tr>';
+      if (thead) thead.innerHTML = dimension === 'mes' ? '<tr><th>Mes</th><th>Site</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Unit/Tote</th><th class="num">Share %</th></tr>' : '<tr><th>Periodo</th><th>Site</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Unit/Tote</th><th class="num">Share %</th></tr>';
       var html = '';
       if (dimension === 'semana') {
         var pre = datos.filter(function(r) { var p = r.semana || ''; return p < FECHA_POST_IMPLEMENTACION; });
