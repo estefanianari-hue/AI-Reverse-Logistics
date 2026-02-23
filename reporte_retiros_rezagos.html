@@ -23,10 +23,14 @@
       margin: -24px -24px 24px -24px;
       padding: 20px 24px;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 12px;
+    }
+    .header-reporte .fila-inferior {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
     }
     h1 {
       color: #ffe600;
@@ -38,10 +42,11 @@
       color: rgba(255,255,255,0.95);
       font-size: 0.8rem;
       font-weight: 500;
+      white-space: nowrap;
     }
     .conclusion-diaria {
-      width: 100%;
-      margin-top: 12px;
+      flex: 1;
+      min-width: 0;
       padding: 12px 16px;
       background: rgba(255,255,255,0.15);
       border-radius: 6px;
@@ -178,11 +183,11 @@
 <body>
   <div class="container">
     <div class="header-reporte">
-      <div style="flex: 1;">
-        <h1>Daily Report Scorecard Retiros y Rezagos</h1>
+      <h1>Daily Report Scorecard Retiros y Rezagos</h1>
+      <div class="fila-inferior">
         <div id="conclusion-diaria" class="conclusion-diaria">Conclusión del día: Picking crece +11.9% en post vs pre. Packing crece +11.4% en post vs pre. Piezas por Tote crece +12.2% en post vs pre.</div>
+        <span id="ultima-actualizacion-datos" class="ultima-actualizacion">Última actualización: 23/02/2026 11:53</span>
       </div>
-      <span id="ultima-actualizacion-datos" class="ultima-actualizacion">Última actualización: 23/02/2026 11:53</span>
     </div>
     <p class="note">Datos desde <strong>01/10/2025</strong> hasta el <strong id="fecha-hoy-nota"></strong> (fecha de actualización). Períodos: Pre (01 Oct-30 Nov), Pre (01-31 Dic), Post (19 Ene - <span id="fecha-fin-post-nota"></span>).</p>
 
