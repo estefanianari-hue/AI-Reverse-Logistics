@@ -263,26 +263,26 @@
 
     <h2>Historial (sin deltas)</h2>
     <p class="note">Serie en el tiempo desde 01/10/2025. Mismos filtros Año y Site.</p>
-    <div class="filtros" style="margin-bottom: 12px;">
-      <div>
-        <label for="historial-dimension">Ver por dimensión</label>
-        <select id="historial-dimension">
+    <div class="filtros" style="margin-bottom: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <label for="historial-dimension" style="margin-bottom: 0;">Ver por dimensión</label>
+        <select id="historial-dimension" style="width: auto; min-width: 100px;">
           <option value="semana">Semana</option>
           <option value="mes">Mes</option>
         </select>
       </div>
-      <div style="display: flex; align-items: center;">
-        <input type="checkbox" id="historial-ver-detalle-site" style="margin-right: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <input type="checkbox" id="historial-ver-detalle-site">
         <label for="historial-ver-detalle-site" style="margin-bottom: 0;">Ver detalle por site</label>
       </div>
-      <div style="display: flex; align-items: center;">
-        <input type="checkbox" id="historial-ver-detalle-fc" style="margin-right: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <input type="checkbox" id="historial-ver-detalle-fc">
         <label for="historial-ver-detalle-fc" style="margin-bottom: 0;">Ver detalle por FC</label>
       </div>
     </div>
     <div class="tabla-wrap">
       <table id="tabla-historial">
-        <thead id="tabla-historial-thead"><tr><th>Periodo</th><th>Site</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Unit/Tote</th><th class="num">Share %</th></tr></thead>
+        <thead id="tabla-historial-thead"><tr><th>Periodo</th><th>Site</th><th>FC</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Unit/Tote</th><th class="num">Share %</th></tr></thead>
         <tbody id="tabla-historial-body"></tbody>
       </table>
     </div>
@@ -595,7 +595,7 @@
         return;
       }
       var datos = dimension === 'mes' ? filtrarHistorial(historialMensual, anio, siteFilter) : filtrarHistorial(historialSemanal, anio, siteFilter);
-      if (thead) thead.innerHTML = dimension === 'mes' ? '<tr><th>Mes</th><th>Site</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Unit/Tote</th><th class="num">Share %</th></tr>' : '<tr><th>Periodo</th><th>Site</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Unit/Tote</th><th class="num">Share %</th></tr>';
+      if (thead) thead.innerHTML = dimension === 'mes' ? '<tr><th>Mes</th><th>Site</th><th>FC</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Unit/Tote</th><th class="num">Share %</th></tr>' : '<tr><th>Periodo</th><th>Site</th><th>FC</th><th class="num">Picking</th><th class="num">Packing</th><th class="num">Unit/Tote</th><th class="num">Share %</th></tr>';
       var html = '';
       if (dimension === 'semana') {
         var pre = datos.filter(function(r) { var p = r.semana || ''; return p < FECHA_POST_IMPLEMENTACION; });
@@ -616,13 +616,13 @@
             var detalleRows = SITES_SIN_TOTAL.map(function(site) { return filasSem.filter(function(r) { return r.site === site; })[0]; }).filter(Boolean);
             var primeraFilaConLabel = true;
             if (totalRow) {
-              out += '<tr class="total-row"><td>' + periodoLabel + '</td><td>Total</td><td class="num">' + fmt(totalRow.picking) + '</td><td class="num">' + fmt(totalRow.packing) + '</td><td class="num">' + fmt(totalRow.tote) + '</td><td class="num">' + fmtPct(totalRow.share) + '</td></tr>';
+              out += '<tr class="total-row"><td>' + periodoLabel + '</td><td>Total</td><td>—</td><td class="num">' + fmt(totalRow.picking) + '</td><td class="num">' + fmt(totalRow.packing) + '</td><td class="num">' + fmt(totalRow.tote) + '</td><td class="num">' + fmtPct(totalRow.share) + '</td></tr>';
               primeraFilaConLabel = false;
             }
             if (!soloTotales) {
               for (var d = 0; d < detalleRows.length; d++) {
                 var r = detalleRows[d];
-                out += '<tr><td>' + (primeraFilaConLabel ? periodoLabel : '') + '</td><td>' + (r.site || '—') + '</td><td class="num">' + fmt(r.picking) + '</td><td class="num">' + fmt(r.packing) + '</td><td class="num">' + fmt(r.tote) + '</td><td class="num">' + fmtPct(r.share) + '</td></tr>';
+                out += '<tr><td>' + (primeraFilaConLabel ? periodoLabel : '') + '</td><td>' + (r.site || '—') + '</td><td>—</td><td class="num">' + fmt(r.picking) + '</td><td class="num">' + fmt(r.packing) + '</td><td class="num">' + fmt(r.tote) + '</td><td class="num">' + fmtPct(r.share) + '</td></tr>';
                 if (primeraFilaConLabel) primeraFilaConLabel = false;
               }
             }
@@ -630,11 +630,11 @@
           return out;
         }
         if (pre.length) {
-          html += '<tr class="historial-seccion"><td colspan="6">Pre implementación</td></tr>';
+          html += '<tr class="historial-seccion"><td colspan="7">Pre implementación</td></tr>';
           html += filasPorSemana(pre, labelPre, !verDetalleSite);
         }
         if (post.length) {
-          html += '<tr class="historial-seccion"><td colspan="6">Post implementación</td></tr>';
+          html += '<tr class="historial-seccion"><td colspan="7">Post implementación</td></tr>';
           html += filasPorSemana(post, labelPost, !verDetalleSite);
         }
       } else {
@@ -654,13 +654,13 @@
             var detalleRows = SITES_SIN_TOTAL.map(function(site) { return filasMes.filter(function(r) { return r.site === site; })[0]; }).filter(Boolean);
             var primeraFilaConLabel = true;
             if (totalRow) {
-              out += '<tr class="total-row"><td>' + periodoLabel + '</td><td>Total</td><td class="num">' + fmt(totalRow.picking) + '</td><td class="num">' + fmt(totalRow.packing) + '</td><td class="num">' + fmt(totalRow.tote) + '</td><td class="num">' + fmtPct(totalRow.share) + '</td></tr>';
+              out += '<tr class="total-row"><td>' + periodoLabel + '</td><td>Total</td><td>—</td><td class="num">' + fmt(totalRow.picking) + '</td><td class="num">' + fmt(totalRow.packing) + '</td><td class="num">' + fmt(totalRow.tote) + '</td><td class="num">' + fmtPct(totalRow.share) + '</td></tr>';
               primeraFilaConLabel = false;
             }
             if (!soloTotales) {
               for (var d = 0; d < detalleRows.length; d++) {
                 var r = detalleRows[d];
-                out += '<tr><td>' + (primeraFilaConLabel ? periodoLabel : '') + '</td><td>' + (r.site || '—') + '</td><td class="num">' + fmt(r.picking) + '</td><td class="num">' + fmt(r.packing) + '</td><td class="num">' + fmt(r.tote) + '</td><td class="num">' + fmtPct(r.share) + '</td></tr>';
+                out += '<tr><td>' + (primeraFilaConLabel ? periodoLabel : '') + '</td><td>' + (r.site || '—') + '</td><td>—</td><td class="num">' + fmt(r.picking) + '</td><td class="num">' + fmt(r.packing) + '</td><td class="num">' + fmt(r.tote) + '</td><td class="num">' + fmtPct(r.share) + '</td></tr>';
                 if (primeraFilaConLabel) primeraFilaConLabel = false;
               }
             }
@@ -668,15 +668,15 @@
           return out;
         }
         if (preMes.length) {
-          html += '<tr class="historial-seccion"><td colspan="6">Pre implementación</td></tr>';
+          html += '<tr class="historial-seccion"><td colspan="7">Pre implementación</td></tr>';
           html += filasPorMes(preMes, !verDetalleSite);
         }
         if (postMes.length) {
-          html += '<tr class="historial-seccion"><td colspan="6">Post implementación</td></tr>';
+          html += '<tr class="historial-seccion"><td colspan="7">Post implementación</td></tr>';
           html += filasPorMes(postMes, !verDetalleSite);
         }
       }
-      if (!html) html = '<tr><td colspan="6">Sin datos. Ejecute query_historial_semanal_site.sql y query_historial_mensual_site.sql y cargue historialSemanal e historialMensual.</td></tr>';
+      if (!html) html = '<tr><td colspan="7">Sin datos. Ejecute query_historial_semanal_site.sql y query_historial_mensual_site.sql y cargue historialSemanal e historialMensual.</td></tr>';
       tbody.innerHTML = html;
     }
     function aplicarFiltros() {
