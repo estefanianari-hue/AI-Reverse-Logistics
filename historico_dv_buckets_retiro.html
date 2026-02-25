@@ -1,0 +1,5235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Histórico DV por bucket de días hasta retiro de Seller</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fff; color: #333; margin: 0; padding: 24px; line-height: 1.5; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { color: #ffe600; background: #3483fa; padding: 20px 24px; margin: -24px -24px 24px -24px; font-size: 1.35rem; }
+    h2 { color: #3483fa; border-bottom: 2px solid #ffe600; padding-bottom: 8px; margin-top: 28px; }
+    h3 { color: #3483fa; font-size: 1rem; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    th, td { padding: 10px 16px; border: 1px solid #ddd; }
+    th { background: #3483fa; color: #fff; }
+    th:first-child, td:first-child { text-align: left; min-width: 90px; }
+    th.num, td.num { text-align: right; }
+    th:not(:first-child):not(.num) { text-align: center; }
+    td:not(:first-child):not(.num) { text-align: center; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .tabla-resumen-wrapper { overflow-x: auto; margin: 16px 0; }
+    .tabla-resumen { min-width: 900px; }
+    #tabla-resumen th { text-align: center; }
+    #tabla-resumen td:first-child { text-align: left; }
+    #tabla-resumen th:first-child { text-align: left; min-width: 100px; width: 100px; white-space: nowrap; }
+    #tabla-resumen td:first-child { min-width: 100px; width: 100px; text-align: left; }
+    #tabla-resumen th:nth-child(2), #tabla-resumen td:nth-child(2) { text-align: center; }
+    #tabla-resumen tr.fila-total td { font-weight: bold; }
+    #tabla-resumen td.col-centro { text-align: center; }
+    #tabla-resumen th.col-centro { text-align: center; }
+    #tabla-resumen td.col-pendiente { background: #e8f5e9; }
+    #tabla-resumen tr:nth-child(even) td.col-pendiente { background: #c8e6c9; }
+    .tabla-compacta { font-size: 0.85rem; line-height: 1.2; }
+    .tabla-compacta th, .tabla-compacta td { padding: 4px 8px; vertical-align: middle; }
+    #tabla-detalle th:first-child, #tabla-detalle td:first-child { text-align: left; }
+    #tabla-detalle th:not(:first-child), #tabla-detalle td:not(:first-child) { text-align: center; }
+    .tabla-detalle-seccion { margin-top: 32px; }
+    .note { background: #e8f0fe; border-left: 4px solid #3483fa; padding: 12px 16px; margin: 16px 0; }
+    code { background: #f0f0f0; padding: 2px 6px; font-size: 0.9em; }
+    ul { margin: 8px 0; padding-left: 24px; }
+    .bucket-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 12px 0; }
+    .bucket-list span { display: block; padding: 8px 12px; background: #f5f5f5; border-radius: 4px; font-size: 0.9rem; }
+    .rel-flow { font-size: 1rem; padding: 12px 16px; background: #f0f7ff; border-radius: 8px; margin: 12px 0; }
+    .rel-flow strong { color: #3483fa; }
+    footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 0.9rem; color: #666; }
+    .filtro-site { display: flex; align-items: center; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
+    .filtro-site label { font-weight: 600; color: #3483fa; }
+    .filtro-site select { padding: 8px 12px; font-size: 1rem; border: 1px solid #3483fa; border-radius: 4px; min-width: 120px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Histórico DV por bucket de días hasta retiro de Seller</h1>
+    <p><strong>Documento para validación.</strong> Objetivo, fuentes, relaciones de fechas, buckets y salida acordada.</p>
+
+    <h2>1. Objetivo del análisis</h2>
+    <ul>
+      <li>Obtener el <strong>histórico mensual</strong> de todo el inventario que entra a <strong>DV (disposición del Seller)</strong> regionalmente.</li>
+      <li>Medir en qué <strong>tiempo por bucket (de 10 en 10 días)</strong> el Seller solicita su retiro, desde que el inventario entra a posición DV.</li>
+      <li>Límite: <strong>máximo 90 días</strong> para solicitar retiro; pasados los 90 días se considera <strong>rezago</strong>.</li>
+    </ul>
+    <p><strong>Métrica deseada (por mes de entrada a DV):</strong></p>
+    <ul>
+      <li>0–10 días: se solicita el <em>XX%</em> del volumen</li>
+      <li>11–20 días: se solicita el <em>YY%</em> del volumen</li>
+      <li>… (hasta 81–90 días)</li>
+      <li>Pasados los 90 días: se <strong>rezaga</strong> el <em>ZZ%</em> del volumen</li>
+      <li>Volumen aún no retirado (dentro de 90 días): <strong>Pendiente (&lt;90 días)</strong></li>
+    </ul>
+
+    <h2>2. Fuentes de datos</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Tabla (BigQuery)</th>
+          <th>Uso en el análisis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>meli-bi-data.WHOWNER.BT_FBM_STOCK_3_MOVEMENT</code></td>
+          <td><strong>Entrada a DV:</strong> <code>FBM_REASON_ID</code> = box-id (ej. 805554805-17). Solo se usan valores en formato <code>^[0-9]+-[0-9]+$</code>; otros formatos (solo números, UUID, SSHP-…) se excluyen. <code>FBM_CREATED_DATE</code> = fecha de creación del movimiento (“entrada a posición DV”). <code>FBM_QUANTITY</code> = unidades (COALESCE a 1).</td>
+        </tr>
+        <tr>
+          <td><code>meli-bi-data.WHOWNER.BT_FBM_WITHDRAWALS_BOXES_V2</code></td>
+          <td><strong>Relación box ↔ parcel:</strong> <code>FBM_WIT_BOX_ID</code> = box-id. <code>FBM_WITH_PARCEL_ID</code> se usa para enlazar con Shipments.</td>
+        </tr>
+        <tr>
+          <td><code>meli-bi-data.WHOWNER.BT_SHP_SHIPMENTS_V2</code></td>
+          <td><strong>Solicitud de retiro:</strong> <code>SHP_EXTERNAL_REFERENCE_ID</code> = <code>FBM_WITH_PARCEL_ID</code> (de Boxes). <code>SHP_DATETIME_CREATED</code> = fecha de creación del shipment 2.0 (“solicitud de retiro”). Se filtra <code>SHP_SHIPMENT_TYPE = 'withdrawal'</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. Relación de fechas (validación)</h2>
+    <p>Flujo para asociar “entrada a DV” con “solicitud de retiro” (lógica de la query final):</p>
+    <div class="rel-flow">
+      <strong>Movement</strong> (FBM_REASON_ID = box-id, FBM_CREATED_DATE) →<br>
+      <strong>Box</strong> (FBM_WIT_BOX_ID = box-id, FBM_WITH_PARCEL_ID) →<br>
+      <strong>Shipment</strong> (SHP_EXTERNAL_REFERENCE_ID = FBM_WITH_PARCEL_ID, SHP_SHIPMENT_TYPE = 'withdrawal', SHP_DATETIME_CREATED)
+    </div>
+    <p><strong>Ejemplo de validación:</strong> box-id <code>805554805-17</code> en Movement creado 2025-07-31 22:15 → mismo box en Withdrawals Boxes (<code>FBM_WIT_BOX_ID</code>) con <code>FBM_WITH_PARCEL_ID</code> → el shipment con <code>SHP_EXTERNAL_REFERENCE_ID</code> = ese parcel, tipo withdrawal, fue creado 2025-08-01 17:05:50. Días hasta retiro = 1 (aprox.).</p>
+
+    <h2>4. Buckets de días</h2>
+    <p>Desde la <strong>fecha de entrada a DV</strong> hasta la <strong>fecha de creación del shipment</strong> (solicitud de retiro), o “Rezago” si no hay retiro y ya pasaron 90 días (o el retiro se solicitó después de 90 días), o “Pendiente” si aún no se retiró y no pasaron 90 días:</p>
+    <div class="bucket-list">
+      <span>0-10 días</span>
+      <span>11-20 días</span>
+      <span>21-30 días</span>
+      <span>31-40 días</span>
+      <span>41-50 días</span>
+      <span>51-60 días</span>
+      <span>61-70 días</span>
+      <span>71-80 días</span>
+      <span>81-90 días</span>
+      <span><strong>Rezago (&gt;90 días)</strong></span>
+      <span><strong>Pendiente (&lt;90 días)</strong></span>
+    </div>
+
+    <h2>5. Salida del análisis</h2>
+    <p>La query devuelve <strong>dos bloques</strong>: (1) agregado general con <code>mes_entrada = 'Total'</code> y (2) una fila por <strong>mes de entrada a DV</strong> (YYYY-MM) y por <strong>bucket de días</strong>. Columnas:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Campo / columna</th>
+          <th>Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>mes_entrada</code></td><td><code>'Total'</code> (agregado de todo el período) o año-mes (YYYY-MM) de entrada a DV.</td></tr>
+        <tr><td><code>bucket_dias</code></td><td>0-10 días, 11-20 días, …, 81-90 días, Rezago (&gt;90 días), Pendiente (&lt;90 días).</td></tr>
+        <tr><td><code>volumen_unidades</code></td><td>Volumen en unidades en ese bucket (suma de FBM_QUANTITY / unidades).</td></tr>
+        <tr><td><code>volumen_cajas</code></td><td>Cantidad de cajas (boxes) en ese bucket.</td></tr>
+        <tr><td><code>total_unidades</code> / <code>total_cajas</code></td><td>Total del mes (o del período si mes_entrada = 'Total'): todo lo que entró a DV en ese mes/período, incl. pendientes.</td></tr>
+        <tr><td><code>pct_volumen_unidades</code> / <code>pct_volumen_cajas</code></td><td>Porcentaje del volumen en ese bucket (base = total del mes o del período).</td></tr>
+      </tbody>
+    </table>
+
+    <h2>6. Parámetros</h2>
+    <ul>
+      <li><strong>FECHA_DESDE / FECHA_HASTA:</strong> rango de fechas de <strong>entrada a DV</strong> (Movement). En la query se definen por DECLARE; puede usarse <strong>OPCIÓN A</strong> (histórico completo desde 2025-01-01), <strong>OPCIÓN B</strong> (un solo mes, ej. 2025-03) o <strong>OPCIÓN C</strong> (últimos 3 meses). Solo una opción activa a la vez.</li>
+      <li>La query <strong>completa</strong> incluye detalle por <strong>site</strong> (SIT_SITE_ID: MLM, MLA, etc.). El filtro Site en este documento filtra por esa columna. Si usás la query LITE (un mes, MLM), los datos tendrán un solo site.</li>
+    </ul>
+
+    <h2>7. Archivos del análisis</h2>
+    <ul>
+      <li><strong>Query principal:</strong> <code>analisis_dv_retiros_buckets/sql/query_historico_dv_buckets_retiro.sql</code> (ejecutar en proyecto <code>meli-bi-data</code>).</li>
+      <li><strong>Query LITE:</strong> <code>query_historico_dv_buckets_retiro_LITE.sql</code> (un mes, validación rápida).</li>
+      <li><strong>Documentación:</strong> <code>analisis_dv_retiros_buckets/README.md</code>. Script para ejecutar y actualizar este HTML: <code>scripts/ejecutar_query_dv_buckets.py</code> (con <code>--html</code> y opcionalmente <code>--completa</code>).</li>
+    </ul>
+
+    <div class="note">
+      <strong>Nota.</strong> Los % se calculan sobre el total que entró a DV en ese mes (o en todo el período si <code>mes_entrada = 'Total'</code>) e incluye pendientes de retiro. La suma de % por bucket puede ser &lt; 100%: la diferencia corresponde a volumen aún <strong>Pendiente (&lt;90 días)</strong>.
+    </div>
+
+    <h2>8. Datos del análisis</h2>
+
+    <h3>Resumen por mes de entrada (% por bucket, unidades)</h3>
+    <p>Por defecto se muestra el porcentaje del volumen retirado en cada bucket de días, por mes de entrada a DV. <em>No hay datos de enero ni febrero 2025:</em> en la tabla Movement los datos de entrada a DV comienzan a partir de 2025-02-28 (enero 2025 no existe en la fuente); el primer mes con volumen completo en el resultado es marzo 2025.</p>
+    <div class="tabla-resumen-wrapper">
+      <table id="tabla-resumen" class="tabla-resumen tabla-compacta">
+        <thead>
+          <tr id="tabla-resumen-head">
+            <th>Mes entrada</th>
+            <!-- Columnas de buckets rellenadas por JS -->
+          </tr>
+        </thead>
+        <tbody id="tabla-resumen-body">
+          <!-- Filas rellenadas por JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="tabla-detalle-seccion">Detalle (con filtros)</h3>
+    <p>Filtros sobre la tabla general (site y mes de entrada a DV):</p>
+    <div class="filtro-site" id="filtros-detalle">
+      <label for="filtro-site">Site:</label>
+      <select id="filtro-site" aria-label="Filtrar por site">
+        <option value="Todos">Todos</option>
+        <option value="MLM">MLM</option>
+        <option value="MLA">MLA</option>
+        <option value="MLB">MLB</option>
+        <option value="MLC">MLC</option>
+        <option value="MCO">MCO</option>
+      </select>
+      <label for="filtro-mes" style="margin-left:16px;">Mes entrada:</label>
+      <select id="filtro-mes" aria-label="Filtrar por mes de entrada">
+        <option value="Todos">Todos</option>
+        <!-- Opciones rellenadas por JS desde datosDetalle -->
+      </select>
+    </div>
+    <div class="tabla-resumen-wrapper">
+    <table id="tabla-detalle" class="tabla-compacta">
+      <thead>
+        <tr>
+          <th>Site</th>
+          <th>Mes entrada</th>
+          <th>Bucket días</th>
+          <th class="num">Vol. unidades</th>
+          <th class="num">Vol. cajas</th>
+          <th class="num">Total mes (unid.)</th>
+          <th class="num">Total mes (cajas)</th>
+          <th class="num">% unid.</th>
+          <th class="num">% cajas</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-detalle-body">
+        <!-- Rellenado por JS desde datosDetalle -->
+      </tbody>
+    </table>
+    </div>
+    <p id="tabla-detalle-leyenda" style="margin-top:8px;font-size:0.9rem;color:#666;">Datos desde <code>sql/script_job.csv</code> (query completa). Actualizar ejecutando la query y volviendo a incorporar el CSV al HTML.</p>
+
+    <footer>
+      Histórico DV por bucket de días hasta retiro de Seller. Proyecto mcp.bigquery.
+    </footer>
+  </div>
+  <script>
+    // Datos de detalle (actualizar al correr la query; agregar campo site por fila si la query lo devuelve)
+    var datosDetalle = [
+  {
+    "site": "MCO",
+    "mes_entrada": "Total",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 182508,
+    "volumen_cajas": 66861,
+    "total_mes_unidades": 210476,
+    "total_mes_cajas": 76416,
+    "pct_volumen_unidades": 86.71,
+    "pct_volumen_cajas": 87.5
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "Total",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 169,
+    "volumen_cajas": 107,
+    "total_mes_unidades": 210476,
+    "total_mes_cajas": 76416,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.14
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "Total",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 253,
+    "volumen_cajas": 62,
+    "total_mes_unidades": 210476,
+    "total_mes_cajas": 76416,
+    "pct_volumen_unidades": 0.12,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "Total",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 143,
+    "volumen_cajas": 46,
+    "total_mes_unidades": 210476,
+    "total_mes_cajas": 76416,
+    "pct_volumen_unidades": 0.07,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "Total",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 57,
+    "volumen_cajas": 14,
+    "total_mes_unidades": 210476,
+    "total_mes_cajas": 76416,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "Total",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 232,
+    "volumen_cajas": 45,
+    "total_mes_unidades": 210476,
+    "total_mes_cajas": 76416,
+    "pct_volumen_unidades": 0.11,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "Total",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 10,
+    "volumen_cajas": 10,
+    "total_mes_unidades": 210476,
+    "total_mes_cajas": 76416,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "Total",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 37,
+    "volumen_cajas": 6,
+    "total_mes_unidades": 210476,
+    "total_mes_cajas": 76416,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "Total",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 20,
+    "volumen_cajas": 6,
+    "total_mes_unidades": 210476,
+    "total_mes_cajas": 76416,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "Total",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 16,
+    "volumen_cajas": 6,
+    "total_mes_unidades": 210476,
+    "total_mes_cajas": 76416,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "Total",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 27031,
+    "volumen_cajas": 9253,
+    "total_mes_unidades": 210476,
+    "total_mes_cajas": 76416,
+    "pct_volumen_unidades": 12.84,
+    "pct_volumen_cajas": 12.11
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-03",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 5444,
+    "volumen_cajas": 1741,
+    "total_mes_unidades": 5446,
+    "total_mes_cajas": 1742,
+    "pct_volumen_unidades": 99.96,
+    "pct_volumen_cajas": 99.94
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-03",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 5446,
+    "total_mes_cajas": 1742,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 15724,
+    "volumen_cajas": 4425,
+    "total_mes_unidades": 15747,
+    "total_mes_cajas": 4432,
+    "pct_volumen_unidades": 99.85,
+    "pct_volumen_cajas": 99.84
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 15747,
+    "total_mes_cajas": 4432,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 3,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 15747,
+    "total_mes_cajas": 4432,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 15747,
+    "total_mes_cajas": 4432,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 15747,
+    "total_mes_cajas": 4432,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 16,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 15747,
+    "total_mes_cajas": 4432,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 18648,
+    "volumen_cajas": 6083,
+    "total_mes_unidades": 18654,
+    "total_mes_cajas": 6087,
+    "pct_volumen_unidades": 99.97,
+    "pct_volumen_cajas": 99.93
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 4,
+    "volumen_cajas": 3,
+    "total_mes_unidades": 18654,
+    "total_mes_cajas": 6087,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 18654,
+    "total_mes_cajas": 6087,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 18592,
+    "volumen_cajas": 6247,
+    "total_mes_unidades": 18634,
+    "total_mes_cajas": 6262,
+    "pct_volumen_unidades": 99.77,
+    "pct_volumen_cajas": 99.76
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 16,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 18634,
+    "total_mes_cajas": 6262,
+    "pct_volumen_unidades": 0.09,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 8,
+    "volumen_cajas": 4,
+    "total_mes_unidades": 18634,
+    "total_mes_cajas": 6262,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 18,
+    "volumen_cajas": 6,
+    "total_mes_unidades": 18634,
+    "total_mes_cajas": 6262,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.1
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 19894,
+    "volumen_cajas": 6870,
+    "total_mes_unidades": 19973,
+    "total_mes_cajas": 6885,
+    "pct_volumen_unidades": 99.6,
+    "pct_volumen_cajas": 99.78
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 7,
+    "volumen_cajas": 7,
+    "total_mes_unidades": 19973,
+    "total_mes_cajas": 6885,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.1
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 45,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 19973,
+    "total_mes_cajas": 6885,
+    "pct_volumen_unidades": 0.23,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 17,
+    "volumen_cajas": 3,
+    "total_mes_unidades": 19973,
+    "total_mes_cajas": 6885,
+    "pct_volumen_unidades": 0.09,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 6,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 19973,
+    "total_mes_cajas": 6885,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 3,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 19973,
+    "total_mes_cajas": 6885,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 19973,
+    "total_mes_cajas": 6885,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 16186,
+    "volumen_cajas": 6164,
+    "total_mes_unidades": 16208,
+    "total_mes_cajas": 6169,
+    "pct_volumen_unidades": 99.86,
+    "pct_volumen_cajas": 99.92
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 11,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 16208,
+    "total_mes_cajas": 6169,
+    "pct_volumen_unidades": 0.07,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 16208,
+    "total_mes_cajas": 6169,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 5,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 16208,
+    "total_mes_cajas": 6169,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 16208,
+    "total_mes_cajas": 6169,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 4,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 16208,
+    "total_mes_cajas": 6169,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 17015,
+    "volumen_cajas": 6845,
+    "total_mes_unidades": 17102,
+    "total_mes_cajas": 6867,
+    "pct_volumen_unidades": 99.49,
+    "pct_volumen_cajas": 99.68
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 12,
+    "volumen_cajas": 8,
+    "total_mes_unidades": 17102,
+    "total_mes_cajas": 6867,
+    "pct_volumen_unidades": 0.07,
+    "pct_volumen_cajas": 0.12
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 52,
+    "volumen_cajas": 6,
+    "total_mes_unidades": 17102,
+    "total_mes_cajas": 6867,
+    "pct_volumen_unidades": 0.3,
+    "pct_volumen_cajas": 0.09
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 20,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 17102,
+    "total_mes_cajas": 6867,
+    "pct_volumen_unidades": 0.12,
+    "pct_volumen_cajas": 0.07
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 17102,
+    "total_mes_cajas": 6867,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 2,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 17102,
+    "total_mes_cajas": 6867,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 15191,
+    "volumen_cajas": 6390,
+    "total_mes_unidades": 15278,
+    "total_mes_cajas": 6441,
+    "pct_volumen_unidades": 99.43,
+    "pct_volumen_cajas": 99.21
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 55,
+    "volumen_cajas": 32,
+    "total_mes_unidades": 15278,
+    "total_mes_cajas": 6441,
+    "pct_volumen_unidades": 0.36,
+    "pct_volumen_cajas": 0.5
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 8,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 15278,
+    "total_mes_cajas": 6441,
+    "pct_volumen_unidades": 0.05,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 4,
+    "volumen_cajas": 3,
+    "total_mes_unidades": 15278,
+    "total_mes_cajas": 6441,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 5,
+    "volumen_cajas": 3,
+    "total_mes_unidades": 15278,
+    "total_mes_cajas": 6441,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 15278,
+    "total_mes_cajas": 6441,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 4,
+    "volumen_cajas": 4,
+    "total_mes_unidades": 15278,
+    "total_mes_cajas": 6441,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 9,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 15278,
+    "total_mes_cajas": 6441,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 15617,
+    "volumen_cajas": 5784,
+    "total_mes_unidades": 15728,
+    "total_mes_cajas": 5803,
+    "pct_volumen_unidades": 99.29,
+    "pct_volumen_cajas": 99.67
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 43,
+    "volumen_cajas": 9,
+    "total_mes_unidades": 15728,
+    "total_mes_cajas": 5803,
+    "pct_volumen_unidades": 0.27,
+    "pct_volumen_cajas": 0.16
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 32,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 15728,
+    "total_mes_cajas": 5803,
+    "pct_volumen_unidades": 0.2,
+    "pct_volumen_cajas": 0.09
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 4,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 15728,
+    "total_mes_cajas": 5803,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 32,
+    "volumen_cajas": 3,
+    "total_mes_unidades": 15728,
+    "total_mes_cajas": 5803,
+    "pct_volumen_unidades": 0.2,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 20956,
+    "volumen_cajas": 7551,
+    "total_mes_unidades": 21274,
+    "total_mes_cajas": 7631,
+    "pct_volumen_unidades": 98.51,
+    "pct_volumen_cajas": 98.95
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 4,
+    "volumen_cajas": 4,
+    "total_mes_unidades": 21274,
+    "total_mes_cajas": 7631,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 67,
+    "volumen_cajas": 22,
+    "total_mes_unidades": 21274,
+    "total_mes_cajas": 7631,
+    "pct_volumen_unidades": 0.31,
+    "pct_volumen_cajas": 0.29
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 13,
+    "volumen_cajas": 8,
+    "total_mes_unidades": 21274,
+    "total_mes_cajas": 7631,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.1
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 20,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 21274,
+    "total_mes_cajas": 7631,
+    "pct_volumen_unidades": 0.09,
+    "pct_volumen_cajas": 0.07
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 207,
+    "volumen_cajas": 34,
+    "total_mes_unidades": 21274,
+    "total_mes_cajas": 7631,
+    "pct_volumen_unidades": 0.97,
+    "pct_volumen_cajas": 0.45
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 5,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 21274,
+    "total_mes_cajas": 7631,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.07
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 21274,
+    "total_mes_cajas": 7631,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 14386,
+    "volumen_cajas": 6635,
+    "total_mes_unidades": 27452,
+    "total_mes_cajas": 11217,
+    "pct_volumen_unidades": 52.4,
+    "pct_volumen_cajas": 59.15
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 47,
+    "volumen_cajas": 42,
+    "total_mes_unidades": 27452,
+    "total_mes_cajas": 11217,
+    "pct_volumen_unidades": 0.17,
+    "pct_volumen_cajas": 0.37
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 30,
+    "volumen_cajas": 15,
+    "total_mes_unidades": 27452,
+    "total_mes_cajas": 11217,
+    "pct_volumen_unidades": 0.11,
+    "pct_volumen_cajas": 0.13
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 67,
+    "volumen_cajas": 19,
+    "total_mes_unidades": 27452,
+    "total_mes_cajas": 11217,
+    "pct_volumen_unidades": 0.24,
+    "pct_volumen_cajas": 0.17
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 12922,
+    "volumen_cajas": 4506,
+    "total_mes_unidades": 27452,
+    "total_mes_cajas": 11217,
+    "pct_volumen_unidades": 47.07,
+    "pct_volumen_cajas": 40.17
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 4855,
+    "volumen_cajas": 2126,
+    "total_mes_unidades": 18980,
+    "total_mes_cajas": 6880,
+    "pct_volumen_unidades": 25.58,
+    "pct_volumen_cajas": 30.9
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 16,
+    "volumen_cajas": 7,
+    "total_mes_unidades": 18980,
+    "total_mes_cajas": 6880,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.1
+  },
+  {
+    "site": "MCO",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 14109,
+    "volumen_cajas": 4747,
+    "total_mes_unidades": 18980,
+    "total_mes_cajas": 6880,
+    "pct_volumen_unidades": 74.34,
+    "pct_volumen_cajas": 69.0
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "Total",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 804132,
+    "volumen_cajas": 272296,
+    "total_mes_unidades": 1126749,
+    "total_mes_cajas": 385247,
+    "pct_volumen_unidades": 71.37,
+    "pct_volumen_cajas": 70.68
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "Total",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 952,
+    "volumen_cajas": 350,
+    "total_mes_unidades": 1126749,
+    "total_mes_cajas": 385247,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.09
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "Total",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 683,
+    "volumen_cajas": 184,
+    "total_mes_unidades": 1126749,
+    "total_mes_cajas": 385247,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "Total",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 700,
+    "volumen_cajas": 561,
+    "total_mes_unidades": 1126749,
+    "total_mes_cajas": 385247,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.15
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "Total",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1352,
+    "volumen_cajas": 900,
+    "total_mes_unidades": 1126749,
+    "total_mes_cajas": 385247,
+    "pct_volumen_unidades": 0.12,
+    "pct_volumen_cajas": 0.23
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "Total",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 218,
+    "volumen_cajas": 112,
+    "total_mes_unidades": 1126749,
+    "total_mes_cajas": 385247,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "Total",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 80,
+    "volumen_cajas": 73,
+    "total_mes_unidades": 1126749,
+    "total_mes_cajas": 385247,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "Total",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 166,
+    "volumen_cajas": 64,
+    "total_mes_unidades": 1126749,
+    "total_mes_cajas": 385247,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "Total",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 1126749,
+    "total_mes_cajas": 385247,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "Total",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 124674,
+    "volumen_cajas": 45226,
+    "total_mes_unidades": 1126749,
+    "total_mes_cajas": 385247,
+    "pct_volumen_unidades": 11.06,
+    "pct_volumen_cajas": 11.74
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "Total",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 193791,
+    "volumen_cajas": 65480,
+    "total_mes_unidades": 1126749,
+    "total_mes_cajas": 385247,
+    "pct_volumen_unidades": 17.2,
+    "pct_volumen_cajas": 17.0
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-03",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 45941,
+    "volumen_cajas": 11843,
+    "total_mes_unidades": 45971,
+    "total_mes_cajas": 11856,
+    "pct_volumen_unidades": 99.93,
+    "pct_volumen_cajas": 99.89
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-03",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 12,
+    "volumen_cajas": 6,
+    "total_mes_unidades": 45971,
+    "total_mes_cajas": 11856,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-03",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 12,
+    "volumen_cajas": 3,
+    "total_mes_unidades": 45971,
+    "total_mes_cajas": 11856,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-03",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 45971,
+    "total_mes_cajas": 11856,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-03",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 4,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 45971,
+    "total_mes_cajas": 11856,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-03",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 45971,
+    "total_mes_cajas": 11856,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 59594,
+    "volumen_cajas": 19811,
+    "total_mes_unidades": 59749,
+    "total_mes_cajas": 19843,
+    "pct_volumen_unidades": 99.74,
+    "pct_volumen_cajas": 99.84
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 91,
+    "volumen_cajas": 13,
+    "total_mes_unidades": 59749,
+    "total_mes_cajas": 19843,
+    "pct_volumen_unidades": 0.15,
+    "pct_volumen_cajas": 0.07
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 46,
+    "volumen_cajas": 7,
+    "total_mes_unidades": 59749,
+    "total_mes_cajas": 19843,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 10,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 59749,
+    "total_mes_cajas": 19843,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 3,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 59749,
+    "total_mes_cajas": 19843,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 59749,
+    "total_mes_cajas": 19843,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 4,
+    "volumen_cajas": 4,
+    "total_mes_unidades": 59749,
+    "total_mes_cajas": 19843,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 75858,
+    "volumen_cajas": 22149,
+    "total_mes_unidades": 76269,
+    "total_mes_cajas": 22255,
+    "pct_volumen_unidades": 99.46,
+    "pct_volumen_cajas": 99.52
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 158,
+    "volumen_cajas": 72,
+    "total_mes_unidades": 76269,
+    "total_mes_cajas": 22255,
+    "pct_volumen_unidades": 0.21,
+    "pct_volumen_cajas": 0.32
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 235,
+    "volumen_cajas": 23,
+    "total_mes_unidades": 76269,
+    "total_mes_cajas": 22255,
+    "pct_volumen_unidades": 0.31,
+    "pct_volumen_cajas": 0.1
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 11,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 76269,
+    "total_mes_cajas": 22255,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 76269,
+    "total_mes_cajas": 22255,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 76269,
+    "total_mes_cajas": 22255,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 4,
+    "volumen_cajas": 4,
+    "total_mes_unidades": 76269,
+    "total_mes_cajas": 22255,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 89485,
+    "volumen_cajas": 26569,
+    "total_mes_unidades": 89594,
+    "total_mes_cajas": 26603,
+    "pct_volumen_unidades": 99.88,
+    "pct_volumen_cajas": 99.87
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 65,
+    "volumen_cajas": 9,
+    "total_mes_unidades": 89594,
+    "total_mes_cajas": 26603,
+    "pct_volumen_unidades": 0.07,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 16,
+    "volumen_cajas": 13,
+    "total_mes_unidades": 89594,
+    "total_mes_cajas": 26603,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 23,
+    "volumen_cajas": 8,
+    "total_mes_unidades": 89594,
+    "total_mes_cajas": 26603,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 89594,
+    "total_mes_cajas": 26603,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 89594,
+    "total_mes_cajas": 26603,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 89594,
+    "total_mes_cajas": 26603,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 115756,
+    "volumen_cajas": 31092,
+    "total_mes_unidades": 115966,
+    "total_mes_cajas": 31148,
+    "pct_volumen_unidades": 99.82,
+    "pct_volumen_cajas": 99.82
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 73,
+    "volumen_cajas": 19,
+    "total_mes_unidades": 115966,
+    "total_mes_cajas": 31148,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 108,
+    "volumen_cajas": 21,
+    "total_mes_unidades": 115966,
+    "total_mes_cajas": 31148,
+    "pct_volumen_unidades": 0.09,
+    "pct_volumen_cajas": 0.07
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 9,
+    "volumen_cajas": 3,
+    "total_mes_unidades": 115966,
+    "total_mes_cajas": 31148,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 115966,
+    "total_mes_cajas": 31148,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 19,
+    "volumen_cajas": 12,
+    "total_mes_unidades": 115966,
+    "total_mes_cajas": 31148,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 111184,
+    "volumen_cajas": 38626,
+    "total_mes_unidades": 111402,
+    "total_mes_cajas": 38698,
+    "pct_volumen_unidades": 99.8,
+    "pct_volumen_cajas": 99.81
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 185,
+    "volumen_cajas": 51,
+    "total_mes_unidades": 111402,
+    "total_mes_cajas": 38698,
+    "pct_volumen_unidades": 0.17,
+    "pct_volumen_cajas": 0.13
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 9,
+    "volumen_cajas": 9,
+    "total_mes_unidades": 111402,
+    "total_mes_cajas": 38698,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 13,
+    "volumen_cajas": 3,
+    "total_mes_unidades": 111402,
+    "total_mes_cajas": 38698,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 111402,
+    "total_mes_cajas": 38698,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 111402,
+    "total_mes_cajas": 38698,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 7,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 111402,
+    "total_mes_cajas": 38698,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 89062,
+    "volumen_cajas": 32417,
+    "total_mes_unidades": 107227,
+    "total_mes_cajas": 39594,
+    "pct_volumen_unidades": 83.06,
+    "pct_volumen_cajas": 81.87
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 111,
+    "volumen_cajas": 53,
+    "total_mes_unidades": 107227,
+    "total_mes_cajas": 39594,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.13
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 25,
+    "volumen_cajas": 9,
+    "total_mes_unidades": 107227,
+    "total_mes_cajas": 39594,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 107227,
+    "total_mes_cajas": 39594,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 107227,
+    "total_mes_cajas": 39594,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 107227,
+    "total_mes_cajas": 39594,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 18024,
+    "volumen_cajas": 7110,
+    "total_mes_unidades": 107227,
+    "total_mes_cajas": 39594,
+    "pct_volumen_unidades": 16.81,
+    "pct_volumen_cajas": 17.96
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 37954,
+    "volumen_cajas": 14433,
+    "total_mes_unidades": 102730,
+    "total_mes_cajas": 37012,
+    "pct_volumen_unidades": 36.95,
+    "pct_volumen_cajas": 39.0
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 53,
+    "volumen_cajas": 11,
+    "total_mes_unidades": 102730,
+    "total_mes_cajas": 37012,
+    "pct_volumen_unidades": 0.05,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 13,
+    "volumen_cajas": 11,
+    "total_mes_unidades": 102730,
+    "total_mes_cajas": 37012,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 5,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 102730,
+    "total_mes_cajas": 37012,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1278,
+    "volumen_cajas": 858,
+    "total_mes_unidades": 102730,
+    "total_mes_cajas": 37012,
+    "pct_volumen_unidades": 1.24,
+    "pct_volumen_cajas": 2.32
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 63427,
+    "volumen_cajas": 21694,
+    "total_mes_unidades": 102730,
+    "total_mes_cajas": 37012,
+    "pct_volumen_unidades": 61.74,
+    "pct_volumen_cajas": 58.61
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 37986,
+    "volumen_cajas": 14276,
+    "total_mes_unidades": 87986,
+    "total_mes_cajas": 33318,
+    "pct_volumen_unidades": 43.17,
+    "pct_volumen_cajas": 42.85
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 40,
+    "volumen_cajas": 12,
+    "total_mes_unidades": 87986,
+    "total_mes_cajas": 33318,
+    "pct_volumen_unidades": 0.05,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 120,
+    "volumen_cajas": 15,
+    "total_mes_unidades": 87986,
+    "total_mes_cajas": 33318,
+    "pct_volumen_unidades": 0.14,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 421,
+    "volumen_cajas": 372,
+    "total_mes_unidades": 87986,
+    "total_mes_cajas": 33318,
+    "pct_volumen_unidades": 0.48,
+    "pct_volumen_cajas": 1.12
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 87986,
+    "total_mes_cajas": 33318,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 76,
+    "volumen_cajas": 69,
+    "total_mes_unidades": 87986,
+    "total_mes_cajas": 33318,
+    "pct_volumen_unidades": 0.09,
+    "pct_volumen_cajas": 0.21
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 166,
+    "volumen_cajas": 64,
+    "total_mes_unidades": 87986,
+    "total_mes_cajas": 33318,
+    "pct_volumen_unidades": 0.19,
+    "pct_volumen_cajas": 0.19
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 43188,
+    "volumen_cajas": 16396,
+    "total_mes_unidades": 87986,
+    "total_mes_cajas": 33318,
+    "pct_volumen_unidades": 49.09,
+    "pct_volumen_cajas": 49.21
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 5988,
+    "volumen_cajas": 2113,
+    "total_mes_unidades": 87986,
+    "total_mes_cajas": 33318,
+    "pct_volumen_unidades": 6.81,
+    "pct_volumen_cajas": 6.34
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 45019,
+    "volumen_cajas": 19022,
+    "total_mes_unidades": 104074,
+    "total_mes_cajas": 38784,
+    "pct_volumen_unidades": 43.26,
+    "pct_volumen_cajas": 49.05
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 94,
+    "volumen_cajas": 54,
+    "total_mes_unidades": 104074,
+    "total_mes_cajas": 38784,
+    "pct_volumen_unidades": 0.09,
+    "pct_volumen_cajas": 0.14
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 20,
+    "volumen_cajas": 14,
+    "total_mes_unidades": 104074,
+    "total_mes_cajas": 38784,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 203,
+    "volumen_cajas": 155,
+    "total_mes_unidades": 104074,
+    "total_mes_cajas": 38784,
+    "pct_volumen_unidades": 0.2,
+    "pct_volumen_cajas": 0.4
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 60,
+    "volumen_cajas": 31,
+    "total_mes_unidades": 104074,
+    "total_mes_cajas": 38784,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 209,
+    "volumen_cajas": 105,
+    "total_mes_unidades": 104074,
+    "total_mes_cajas": 38784,
+    "pct_volumen_unidades": 0.2,
+    "pct_volumen_cajas": 0.27
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 3,
+    "volumen_cajas": 3,
+    "total_mes_unidades": 104074,
+    "total_mes_cajas": 38784,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 58466,
+    "volumen_cajas": 19400,
+    "total_mes_unidades": 104074,
+    "total_mes_cajas": 38784,
+    "pct_volumen_unidades": 56.18,
+    "pct_volumen_cajas": 50.02
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 58485,
+    "volumen_cajas": 24142,
+    "total_mes_unidades": 127491,
+    "total_mes_cajas": 48905,
+    "pct_volumen_unidades": 45.87,
+    "pct_volumen_cajas": 49.37
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 55,
+    "volumen_cajas": 39,
+    "total_mes_unidades": 127491,
+    "total_mes_cajas": 48905,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 74,
+    "volumen_cajas": 54,
+    "total_mes_unidades": 127491,
+    "total_mes_cajas": 48905,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.11
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 2,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 127491,
+    "total_mes_cajas": 48905,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 68875,
+    "volumen_cajas": 24668,
+    "total_mes_unidades": 127491,
+    "total_mes_cajas": 48905,
+    "pct_volumen_unidades": 54.02,
+    "pct_volumen_cajas": 50.44
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 37808,
+    "volumen_cajas": 17916,
+    "total_mes_unidades": 98290,
+    "total_mes_cajas": 37231,
+    "pct_volumen_unidades": 38.47,
+    "pct_volumen_cajas": 48.12
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 15,
+    "volumen_cajas": 11,
+    "total_mes_unidades": 98290,
+    "total_mes_cajas": 37231,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 5,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 98290,
+    "total_mes_cajas": 37231,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLA",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 60462,
+    "volumen_cajas": 19299,
+    "total_mes_unidades": 98290,
+    "total_mes_cajas": 37231,
+    "pct_volumen_unidades": 61.51,
+    "pct_volumen_cajas": 51.84
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "Total",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 8696698,
+    "volumen_cajas": 3423784,
+    "total_mes_unidades": 8776052,
+    "total_mes_cajas": 3455461,
+    "pct_volumen_unidades": 99.1,
+    "pct_volumen_cajas": 99.08
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "Total",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 7148,
+    "volumen_cajas": 2647,
+    "total_mes_unidades": 8776052,
+    "total_mes_cajas": 3455461,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "Total",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 10095,
+    "volumen_cajas": 3075,
+    "total_mes_unidades": 8776052,
+    "total_mes_cajas": 3455461,
+    "pct_volumen_unidades": 0.12,
+    "pct_volumen_cajas": 0.09
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "Total",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 5464,
+    "volumen_cajas": 1965,
+    "total_mes_unidades": 8776052,
+    "total_mes_cajas": 3455461,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "Total",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 3271,
+    "volumen_cajas": 1262,
+    "total_mes_unidades": 8776052,
+    "total_mes_cajas": 3455461,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "Total",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 2198,
+    "volumen_cajas": 862,
+    "total_mes_unidades": 8776052,
+    "total_mes_cajas": 3455461,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "Total",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 1375,
+    "volumen_cajas": 470,
+    "total_mes_unidades": 8776052,
+    "total_mes_cajas": 3455461,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "Total",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 1300,
+    "volumen_cajas": 385,
+    "total_mes_unidades": 8776052,
+    "total_mes_cajas": 3455461,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "Total",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 408,
+    "volumen_cajas": 168,
+    "total_mes_unidades": 8776052,
+    "total_mes_cajas": 3455461,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "Total",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 3226,
+    "volumen_cajas": 1212,
+    "total_mes_unidades": 8776052,
+    "total_mes_cajas": 3455461,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "Total",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 44869,
+    "volumen_cajas": 19631,
+    "total_mes_unidades": 8776052,
+    "total_mes_cajas": 3455461,
+    "pct_volumen_unidades": 0.51,
+    "pct_volumen_cajas": 0.57
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 163360,
+    "volumen_cajas": 62421,
+    "total_mes_unidades": 163780,
+    "total_mes_cajas": 62553,
+    "pct_volumen_unidades": 99.74,
+    "pct_volumen_cajas": 99.79
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 124,
+    "volumen_cajas": 34,
+    "total_mes_unidades": 163780,
+    "total_mes_cajas": 62553,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 94,
+    "volumen_cajas": 34,
+    "total_mes_unidades": 163780,
+    "total_mes_cajas": 62553,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 112,
+    "volumen_cajas": 23,
+    "total_mes_unidades": 163780,
+    "total_mes_cajas": 62553,
+    "pct_volumen_unidades": 0.07,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 39,
+    "volumen_cajas": 15,
+    "total_mes_unidades": 163780,
+    "total_mes_cajas": 62553,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 6,
+    "volumen_cajas": 4,
+    "total_mes_unidades": 163780,
+    "total_mes_cajas": 62553,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 14,
+    "volumen_cajas": 8,
+    "total_mes_unidades": 163780,
+    "total_mes_cajas": 62553,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 13,
+    "volumen_cajas": 6,
+    "total_mes_unidades": 163780,
+    "total_mes_cajas": 62553,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 18,
+    "volumen_cajas": 8,
+    "total_mes_unidades": 163780,
+    "total_mes_cajas": 62553,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 706522,
+    "volumen_cajas": 280558,
+    "total_mes_unidades": 709585,
+    "total_mes_cajas": 281963,
+    "pct_volumen_unidades": 99.57,
+    "pct_volumen_cajas": 99.5
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 1467,
+    "volumen_cajas": 592,
+    "total_mes_unidades": 709585,
+    "total_mes_cajas": 281963,
+    "pct_volumen_unidades": 0.21,
+    "pct_volumen_cajas": 0.21
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 565,
+    "volumen_cajas": 290,
+    "total_mes_unidades": 709585,
+    "total_mes_cajas": 281963,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.1
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 433,
+    "volumen_cajas": 130,
+    "total_mes_unidades": 709585,
+    "total_mes_cajas": 281963,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 95,
+    "volumen_cajas": 46,
+    "total_mes_unidades": 709585,
+    "total_mes_cajas": 281963,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 175,
+    "volumen_cajas": 151,
+    "total_mes_unidades": 709585,
+    "total_mes_cajas": 281963,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 48,
+    "volumen_cajas": 26,
+    "total_mes_unidades": 709585,
+    "total_mes_cajas": 281963,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 115,
+    "volumen_cajas": 108,
+    "total_mes_unidades": 709585,
+    "total_mes_cajas": 281963,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 39,
+    "volumen_cajas": 6,
+    "total_mes_unidades": 709585,
+    "total_mes_cajas": 281963,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 126,
+    "volumen_cajas": 56,
+    "total_mes_unidades": 709585,
+    "total_mes_cajas": 281963,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 716242,
+    "volumen_cajas": 288951,
+    "total_mes_unidades": 719236,
+    "total_mes_cajas": 290161,
+    "pct_volumen_unidades": 99.58,
+    "pct_volumen_cajas": 99.58
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 698,
+    "volumen_cajas": 302,
+    "total_mes_unidades": 719236,
+    "total_mes_cajas": 290161,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.1
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 707,
+    "volumen_cajas": 238,
+    "total_mes_unidades": 719236,
+    "total_mes_cajas": 290161,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 277,
+    "volumen_cajas": 96,
+    "total_mes_unidades": 719236,
+    "total_mes_cajas": 290161,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 107,
+    "volumen_cajas": 53,
+    "total_mes_unidades": 719236,
+    "total_mes_cajas": 290161,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 56,
+    "volumen_cajas": 38,
+    "total_mes_unidades": 719236,
+    "total_mes_cajas": 290161,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 38,
+    "volumen_cajas": 21,
+    "total_mes_unidades": 719236,
+    "total_mes_cajas": 290161,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 36,
+    "volumen_cajas": 21,
+    "total_mes_unidades": 719236,
+    "total_mes_cajas": 290161,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 21,
+    "volumen_cajas": 11,
+    "total_mes_unidades": 719236,
+    "total_mes_cajas": 290161,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 1054,
+    "volumen_cajas": 430,
+    "total_mes_unidades": 719236,
+    "total_mes_cajas": 290161,
+    "pct_volumen_unidades": 0.15,
+    "pct_volumen_cajas": 0.15
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 883232,
+    "volumen_cajas": 328749,
+    "total_mes_unidades": 886728,
+    "total_mes_cajas": 329752,
+    "pct_volumen_unidades": 99.61,
+    "pct_volumen_cajas": 99.7
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 830,
+    "volumen_cajas": 195,
+    "total_mes_unidades": 886728,
+    "total_mes_cajas": 329752,
+    "pct_volumen_unidades": 0.09,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 917,
+    "volumen_cajas": 219,
+    "total_mes_unidades": 886728,
+    "total_mes_cajas": 329752,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.07
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 519,
+    "volumen_cajas": 144,
+    "total_mes_unidades": 886728,
+    "total_mes_cajas": 329752,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 305,
+    "volumen_cajas": 102,
+    "total_mes_unidades": 886728,
+    "total_mes_cajas": 329752,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 101,
+    "volumen_cajas": 36,
+    "total_mes_unidades": 886728,
+    "total_mes_cajas": 329752,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 39,
+    "volumen_cajas": 22,
+    "total_mes_unidades": 886728,
+    "total_mes_cajas": 329752,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 53,
+    "volumen_cajas": 24,
+    "total_mes_unidades": 886728,
+    "total_mes_cajas": 329752,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 15,
+    "volumen_cajas": 10,
+    "total_mes_unidades": 886728,
+    "total_mes_cajas": 329752,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 717,
+    "volumen_cajas": 251,
+    "total_mes_unidades": 886728,
+    "total_mes_cajas": 329752,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 972986,
+    "volumen_cajas": 354816,
+    "total_mes_unidades": 976130,
+    "total_mes_cajas": 355900,
+    "pct_volumen_unidades": 99.68,
+    "pct_volumen_cajas": 99.7
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 977,
+    "volumen_cajas": 316,
+    "total_mes_unidades": 976130,
+    "total_mes_cajas": 355900,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.09
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 743,
+    "volumen_cajas": 225,
+    "total_mes_unidades": 976130,
+    "total_mes_cajas": 355900,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 625,
+    "volumen_cajas": 198,
+    "total_mes_unidades": 976130,
+    "total_mes_cajas": 355900,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 114,
+    "volumen_cajas": 58,
+    "total_mes_unidades": 976130,
+    "total_mes_cajas": 355900,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 156,
+    "volumen_cajas": 34,
+    "total_mes_unidades": 976130,
+    "total_mes_cajas": 355900,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 59,
+    "volumen_cajas": 18,
+    "total_mes_unidades": 976130,
+    "total_mes_cajas": 355900,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 60,
+    "volumen_cajas": 19,
+    "total_mes_unidades": 976130,
+    "total_mes_cajas": 355900,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 21,
+    "volumen_cajas": 16,
+    "total_mes_unidades": 976130,
+    "total_mes_cajas": 355900,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 389,
+    "volumen_cajas": 200,
+    "total_mes_unidades": 976130,
+    "total_mes_cajas": 355900,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 987135,
+    "volumen_cajas": 364158,
+    "total_mes_unidades": 990417,
+    "total_mes_cajas": 365166,
+    "pct_volumen_unidades": 99.67,
+    "pct_volumen_cajas": 99.72
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 759,
+    "volumen_cajas": 306,
+    "total_mes_unidades": 990417,
+    "total_mes_cajas": 365166,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 921,
+    "volumen_cajas": 302,
+    "total_mes_unidades": 990417,
+    "total_mes_cajas": 365166,
+    "pct_volumen_unidades": 0.09,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 266,
+    "volumen_cajas": 122,
+    "total_mes_unidades": 990417,
+    "total_mes_cajas": 365166,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 124,
+    "volumen_cajas": 37,
+    "total_mes_unidades": 990417,
+    "total_mes_cajas": 365166,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 142,
+    "volumen_cajas": 28,
+    "total_mes_unidades": 990417,
+    "total_mes_cajas": 365166,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 164,
+    "volumen_cajas": 35,
+    "total_mes_unidades": 990417,
+    "total_mes_cajas": 365166,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 349,
+    "volumen_cajas": 44,
+    "total_mes_unidades": 990417,
+    "total_mes_cajas": 365166,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 18,
+    "volumen_cajas": 6,
+    "total_mes_unidades": 990417,
+    "total_mes_cajas": 365166,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 539,
+    "volumen_cajas": 128,
+    "total_mes_unidades": 990417,
+    "total_mes_cajas": 365166,
+    "pct_volumen_unidades": 0.05,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 938849,
+    "volumen_cajas": 373807,
+    "total_mes_unidades": 942830,
+    "total_mes_cajas": 375058,
+    "pct_volumen_unidades": 99.58,
+    "pct_volumen_cajas": 99.67
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 704,
+    "volumen_cajas": 248,
+    "total_mes_unidades": 942830,
+    "total_mes_cajas": 375058,
+    "pct_volumen_unidades": 0.07,
+    "pct_volumen_cajas": 0.07
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 2043,
+    "volumen_cajas": 579,
+    "total_mes_unidades": 942830,
+    "total_mes_cajas": 375058,
+    "pct_volumen_unidades": 0.22,
+    "pct_volumen_cajas": 0.15
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 300,
+    "volumen_cajas": 112,
+    "total_mes_unidades": 942830,
+    "total_mes_cajas": 375058,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 212,
+    "volumen_cajas": 92,
+    "total_mes_unidades": 942830,
+    "total_mes_cajas": 375058,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 182,
+    "volumen_cajas": 42,
+    "total_mes_unidades": 942830,
+    "total_mes_cajas": 375058,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 56,
+    "volumen_cajas": 24,
+    "total_mes_unidades": 942830,
+    "total_mes_cajas": 375058,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 120,
+    "volumen_cajas": 23,
+    "total_mes_unidades": 942830,
+    "total_mes_cajas": 375058,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 92,
+    "volumen_cajas": 39,
+    "total_mes_unidades": 942830,
+    "total_mes_cajas": 375058,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 272,
+    "volumen_cajas": 92,
+    "total_mes_unidades": 942830,
+    "total_mes_cajas": 375058,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 768959,
+    "volumen_cajas": 326989,
+    "total_mes_unidades": 773356,
+    "total_mes_cajas": 328955,
+    "pct_volumen_unidades": 99.43,
+    "pct_volumen_cajas": 99.4
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 745,
+    "volumen_cajas": 370,
+    "total_mes_unidades": 773356,
+    "total_mes_cajas": 328955,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.11
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 736,
+    "volumen_cajas": 314,
+    "total_mes_unidades": 773356,
+    "total_mes_cajas": 328955,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.1
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 631,
+    "volumen_cajas": 301,
+    "total_mes_unidades": 773356,
+    "total_mes_cajas": 328955,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.09
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 495,
+    "volumen_cajas": 260,
+    "total_mes_unidades": 773356,
+    "total_mes_cajas": 328955,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 593,
+    "volumen_cajas": 322,
+    "total_mes_unidades": 773356,
+    "total_mes_cajas": 328955,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.1
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 619,
+    "volumen_cajas": 189,
+    "total_mes_unidades": 773356,
+    "total_mes_cajas": 328955,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 308,
+    "volumen_cajas": 87,
+    "total_mes_unidades": 773356,
+    "total_mes_cajas": 328955,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 155,
+    "volumen_cajas": 75,
+    "total_mes_unidades": 773356,
+    "total_mes_cajas": 328955,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 111,
+    "volumen_cajas": 47,
+    "total_mes_unidades": 773356,
+    "total_mes_cajas": 328955,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 4,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 773356,
+    "total_mes_cajas": 328955,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 780234,
+    "volumen_cajas": 324499,
+    "total_mes_unidades": 786954,
+    "total_mes_cajas": 326789,
+    "pct_volumen_unidades": 99.15,
+    "pct_volumen_cajas": 99.3
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 289,
+    "volumen_cajas": 134,
+    "total_mes_unidades": 786954,
+    "total_mes_cajas": 326789,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 1592,
+    "volumen_cajas": 537,
+    "total_mes_unidades": 786954,
+    "total_mes_cajas": 326789,
+    "pct_volumen_unidades": 0.2,
+    "pct_volumen_cajas": 0.16
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 1578,
+    "volumen_cajas": 639,
+    "total_mes_unidades": 786954,
+    "total_mes_cajas": 326789,
+    "pct_volumen_unidades": 0.2,
+    "pct_volumen_cajas": 0.2
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1674,
+    "volumen_cajas": 558,
+    "total_mes_unidades": 786954,
+    "total_mes_cajas": 326789,
+    "pct_volumen_unidades": 0.21,
+    "pct_volumen_cajas": 0.17
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 787,
+    "volumen_cajas": 207,
+    "total_mes_unidades": 786954,
+    "total_mes_cajas": 326789,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 338,
+    "volumen_cajas": 127,
+    "total_mes_unidades": 786954,
+    "total_mes_cajas": 326789,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 246,
+    "volumen_cajas": 53,
+    "total_mes_unidades": 786954,
+    "total_mes_cajas": 326789,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 47,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 786954,
+    "total_mes_cajas": 326789,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 169,
+    "volumen_cajas": 30,
+    "total_mes_unidades": 786954,
+    "total_mes_cajas": 326789,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 974948,
+    "volumen_cajas": 387893,
+    "total_mes_unidades": 978074,
+    "total_mes_cajas": 388608,
+    "pct_volumen_unidades": 99.68,
+    "pct_volumen_cajas": 99.82
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 484,
+    "volumen_cajas": 120,
+    "total_mes_unidades": 978074,
+    "total_mes_cajas": 388608,
+    "pct_volumen_unidades": 0.05,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 1772,
+    "volumen_cajas": 333,
+    "total_mes_unidades": 978074,
+    "total_mes_cajas": 388608,
+    "pct_volumen_unidades": 0.18,
+    "pct_volumen_cajas": 0.09
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 723,
+    "volumen_cajas": 200,
+    "total_mes_unidades": 978074,
+    "total_mes_cajas": 388608,
+    "pct_volumen_unidades": 0.07,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 106,
+    "volumen_cajas": 41,
+    "total_mes_unidades": 978074,
+    "total_mes_cajas": 388608,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 41,
+    "volumen_cajas": 21,
+    "total_mes_unidades": 978074,
+    "total_mes_cajas": 388608,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 804231,
+    "volumen_cajas": 330943,
+    "total_mes_unidades": 848962,
+    "total_mes_cajas": 350556,
+    "pct_volumen_unidades": 94.73,
+    "pct_volumen_cajas": 94.41
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 71,
+    "volumen_cajas": 30,
+    "total_mes_unidades": 848962,
+    "total_mes_cajas": 350556,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 5,
+    "volumen_cajas": 4,
+    "total_mes_unidades": 848962,
+    "total_mes_cajas": 350556,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLB",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 44655,
+    "volumen_cajas": 19579,
+    "total_mes_unidades": 848962,
+    "total_mes_cajas": 350556,
+    "pct_volumen_unidades": 5.26,
+    "pct_volumen_cajas": 5.59
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "Total",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 675457,
+    "volumen_cajas": 230454,
+    "total_mes_unidades": 681628,
+    "total_mes_cajas": 232535,
+    "pct_volumen_unidades": 99.09,
+    "pct_volumen_cajas": 99.11
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "Total",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 1570,
+    "volumen_cajas": 647,
+    "total_mes_unidades": 681628,
+    "total_mes_cajas": 232535,
+    "pct_volumen_unidades": 0.23,
+    "pct_volumen_cajas": 0.28
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "Total",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 498,
+    "volumen_cajas": 125,
+    "total_mes_unidades": 681628,
+    "total_mes_cajas": 232535,
+    "pct_volumen_unidades": 0.07,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "Total",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 161,
+    "volumen_cajas": 66,
+    "total_mes_unidades": 681628,
+    "total_mes_cajas": 232535,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "Total",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 263,
+    "volumen_cajas": 149,
+    "total_mes_unidades": 681628,
+    "total_mes_cajas": 232535,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "Total",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 681628,
+    "total_mes_cajas": 232535,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "Total",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 261,
+    "volumen_cajas": 131,
+    "total_mes_unidades": 681628,
+    "total_mes_cajas": 232535,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "Total",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 70,
+    "volumen_cajas": 32,
+    "total_mes_unidades": 681628,
+    "total_mes_cajas": 232535,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "Total",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 3347,
+    "volumen_cajas": 930,
+    "total_mes_unidades": 681628,
+    "total_mes_cajas": 232535,
+    "pct_volumen_unidades": 0.49,
+    "pct_volumen_cajas": 0.4
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-03",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 16324,
+    "volumen_cajas": 5686,
+    "total_mes_unidades": 16431,
+    "total_mes_cajas": 5694,
+    "pct_volumen_unidades": 99.35,
+    "pct_volumen_cajas": 99.86
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-03",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 48,
+    "volumen_cajas": 4,
+    "total_mes_unidades": 16431,
+    "total_mes_cajas": 5694,
+    "pct_volumen_unidades": 0.29,
+    "pct_volumen_cajas": 0.07
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-03",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 58,
+    "volumen_cajas": 3,
+    "total_mes_unidades": 16431,
+    "total_mes_cajas": 5694,
+    "pct_volumen_unidades": 0.35,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-03",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 16431,
+    "total_mes_cajas": 5694,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 47250,
+    "volumen_cajas": 16319,
+    "total_mes_unidades": 47415,
+    "total_mes_cajas": 16383,
+    "pct_volumen_unidades": 99.65,
+    "pct_volumen_cajas": 99.61
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 157,
+    "volumen_cajas": 57,
+    "total_mes_unidades": 47415,
+    "total_mes_cajas": 16383,
+    "pct_volumen_unidades": 0.33,
+    "pct_volumen_cajas": 0.35
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 8,
+    "volumen_cajas": 7,
+    "total_mes_unidades": 47415,
+    "total_mes_cajas": 16383,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 50725,
+    "volumen_cajas": 16600,
+    "total_mes_unidades": 50844,
+    "total_mes_cajas": 16635,
+    "pct_volumen_unidades": 99.77,
+    "pct_volumen_cajas": 99.79
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 66,
+    "volumen_cajas": 14,
+    "total_mes_unidades": 50844,
+    "total_mes_cajas": 16635,
+    "pct_volumen_unidades": 0.13,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 16,
+    "volumen_cajas": 7,
+    "total_mes_unidades": 50844,
+    "total_mes_cajas": 16635,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 37,
+    "volumen_cajas": 14,
+    "total_mes_unidades": 50844,
+    "total_mes_cajas": 16635,
+    "pct_volumen_unidades": 0.07,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 50269,
+    "volumen_cajas": 18094,
+    "total_mes_unidades": 50444,
+    "total_mes_cajas": 18138,
+    "pct_volumen_unidades": 99.65,
+    "pct_volumen_cajas": 99.76
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 144,
+    "volumen_cajas": 20,
+    "total_mes_unidades": 50444,
+    "total_mes_cajas": 18138,
+    "pct_volumen_unidades": 0.29,
+    "pct_volumen_cajas": 0.11
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 23,
+    "volumen_cajas": 16,
+    "total_mes_unidades": 50444,
+    "total_mes_cajas": 18138,
+    "pct_volumen_unidades": 0.05,
+    "pct_volumen_cajas": 0.09
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 50444,
+    "total_mes_cajas": 18138,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 7,
+    "volumen_cajas": 7,
+    "total_mes_unidades": 50444,
+    "total_mes_cajas": 18138,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 77642,
+    "volumen_cajas": 24226,
+    "total_mes_unidades": 77728,
+    "total_mes_cajas": 24253,
+    "pct_volumen_unidades": 99.89,
+    "pct_volumen_cajas": 99.89
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 29,
+    "volumen_cajas": 12,
+    "total_mes_unidades": 77728,
+    "total_mes_cajas": 24253,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 57,
+    "volumen_cajas": 15,
+    "total_mes_unidades": 77728,
+    "total_mes_cajas": 24253,
+    "pct_volumen_unidades": 0.07,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 60183,
+    "volumen_cajas": 20171,
+    "total_mes_unidades": 60449,
+    "total_mes_cajas": 20304,
+    "pct_volumen_unidades": 99.56,
+    "pct_volumen_cajas": 99.34
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 16,
+    "volumen_cajas": 13,
+    "total_mes_unidades": 60449,
+    "total_mes_cajas": 20304,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 250,
+    "volumen_cajas": 120,
+    "total_mes_unidades": 60449,
+    "total_mes_cajas": 20304,
+    "pct_volumen_unidades": 0.41,
+    "pct_volumen_cajas": 0.59
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 90010,
+    "volumen_cajas": 32128,
+    "total_mes_unidades": 90212,
+    "total_mes_cajas": 32182,
+    "pct_volumen_unidades": 99.78,
+    "pct_volumen_cajas": 99.83
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 35,
+    "volumen_cajas": 12,
+    "total_mes_unidades": 90212,
+    "total_mes_cajas": 32182,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 167,
+    "volumen_cajas": 42,
+    "total_mes_unidades": 90212,
+    "total_mes_cajas": 32182,
+    "pct_volumen_unidades": 0.19,
+    "pct_volumen_cajas": 0.13
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 51833,
+    "volumen_cajas": 19196,
+    "total_mes_unidades": 51992,
+    "total_mes_cajas": 19233,
+    "pct_volumen_unidades": 99.69,
+    "pct_volumen_cajas": 99.81
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 64,
+    "volumen_cajas": 32,
+    "total_mes_unidades": 51992,
+    "total_mes_cajas": 19233,
+    "pct_volumen_unidades": 0.12,
+    "pct_volumen_cajas": 0.17
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 95,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 51992,
+    "total_mes_cajas": 19233,
+    "pct_volumen_unidades": 0.18,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 61333,
+    "volumen_cajas": 21946,
+    "total_mes_unidades": 61672,
+    "total_mes_cajas": 22110,
+    "pct_volumen_unidades": 99.45,
+    "pct_volumen_cajas": 99.26
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 63,
+    "volumen_cajas": 10,
+    "total_mes_unidades": 61672,
+    "total_mes_cajas": 22110,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 12,
+    "volumen_cajas": 4,
+    "total_mes_unidades": 61672,
+    "total_mes_cajas": 22110,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 61672,
+    "total_mes_cajas": 22110,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 263,
+    "volumen_cajas": 149,
+    "total_mes_unidades": 61672,
+    "total_mes_cajas": 22110,
+    "pct_volumen_unidades": 0.43,
+    "pct_volumen_cajas": 0.67
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 49842,
+    "volumen_cajas": 18322,
+    "total_mes_unidades": 50726,
+    "total_mes_cajas": 18759,
+    "pct_volumen_unidades": 98.26,
+    "pct_volumen_cajas": 97.67
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 668,
+    "volumen_cajas": 343,
+    "total_mes_unidades": 50726,
+    "total_mes_cajas": 18759,
+    "pct_volumen_unidades": 1.32,
+    "pct_volumen_cajas": 1.83
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 57,
+    "volumen_cajas": 21,
+    "total_mes_unidades": 50726,
+    "total_mes_cajas": 18759,
+    "pct_volumen_unidades": 0.11,
+    "pct_volumen_cajas": 0.11
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 85,
+    "volumen_cajas": 37,
+    "total_mes_unidades": 50726,
+    "total_mes_cajas": 18759,
+    "pct_volumen_unidades": 0.17,
+    "pct_volumen_cajas": 0.2
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 1,
+    "volumen_cajas": 1,
+    "total_mes_unidades": 50726,
+    "total_mes_cajas": 18759,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 3,
+    "volumen_cajas": 3,
+    "total_mes_unidades": 50726,
+    "total_mes_cajas": 18759,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 70,
+    "volumen_cajas": 32,
+    "total_mes_unidades": 50726,
+    "total_mes_cajas": 18759,
+    "pct_volumen_unidades": 0.14,
+    "pct_volumen_cajas": 0.17
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 61028,
+    "volumen_cajas": 20265,
+    "total_mes_unidades": 61343,
+    "total_mes_cajas": 20411,
+    "pct_volumen_unidades": 99.49,
+    "pct_volumen_cajas": 99.28
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 273,
+    "volumen_cajas": 128,
+    "total_mes_unidades": 61343,
+    "total_mes_cajas": 20411,
+    "pct_volumen_unidades": 0.45,
+    "pct_volumen_cajas": 0.63
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 5,
+    "volumen_cajas": 5,
+    "total_mes_unidades": 61343,
+    "total_mes_cajas": 20411,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 37,
+    "volumen_cajas": 13,
+    "total_mes_unidades": 61343,
+    "total_mes_cajas": 20411,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 59018,
+    "volumen_cajas": 17501,
+    "total_mes_unidades": 62372,
+    "total_mes_cajas": 18433,
+    "pct_volumen_unidades": 94.62,
+    "pct_volumen_cajas": 94.94
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 7,
+    "volumen_cajas": 2,
+    "total_mes_unidades": 62372,
+    "total_mes_cajas": 18433,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLC",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 3347,
+    "volumen_cajas": 930,
+    "total_mes_unidades": 62372,
+    "total_mes_cajas": 18433,
+    "pct_volumen_unidades": 5.37,
+    "pct_volumen_cajas": 5.05
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "Total",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 5880492,
+    "volumen_cajas": 2127913,
+    "total_mes_unidades": 6098286,
+    "total_mes_cajas": 2180694,
+    "pct_volumen_unidades": 96.43,
+    "pct_volumen_cajas": 97.58
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "Total",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 72789,
+    "volumen_cajas": 17056,
+    "total_mes_unidades": 6098286,
+    "total_mes_cajas": 2180694,
+    "pct_volumen_unidades": 1.19,
+    "pct_volumen_cajas": 0.78
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "Total",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 62970,
+    "volumen_cajas": 15065,
+    "total_mes_unidades": 6098286,
+    "total_mes_cajas": 2180694,
+    "pct_volumen_unidades": 1.03,
+    "pct_volumen_cajas": 0.69
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "Total",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 28399,
+    "volumen_cajas": 6829,
+    "total_mes_unidades": 6098286,
+    "total_mes_cajas": 2180694,
+    "pct_volumen_unidades": 0.47,
+    "pct_volumen_cajas": 0.31
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "Total",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 13955,
+    "volumen_cajas": 3149,
+    "total_mes_unidades": 6098286,
+    "total_mes_cajas": 2180694,
+    "pct_volumen_unidades": 0.23,
+    "pct_volumen_cajas": 0.14
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "Total",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 8130,
+    "volumen_cajas": 1741,
+    "total_mes_unidades": 6098286,
+    "total_mes_cajas": 2180694,
+    "pct_volumen_unidades": 0.13,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "Total",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 4609,
+    "volumen_cajas": 1023,
+    "total_mes_unidades": 6098286,
+    "total_mes_cajas": 2180694,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "Total",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 2795,
+    "volumen_cajas": 557,
+    "total_mes_unidades": 6098286,
+    "total_mes_cajas": 2180694,
+    "pct_volumen_unidades": 0.05,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "Total",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 1930,
+    "volumen_cajas": 357,
+    "total_mes_unidades": 6098286,
+    "total_mes_cajas": 2180694,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "Total",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 11781,
+    "volumen_cajas": 2705,
+    "total_mes_unidades": 6098286,
+    "total_mes_cajas": 2180694,
+    "pct_volumen_unidades": 0.19,
+    "pct_volumen_cajas": 0.12
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "Total",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 10436,
+    "volumen_cajas": 4299,
+    "total_mes_unidades": 6098286,
+    "total_mes_cajas": 2180694,
+    "pct_volumen_unidades": 0.17,
+    "pct_volumen_cajas": 0.2
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 292016,
+    "volumen_cajas": 102397,
+    "total_mes_unidades": 304917,
+    "total_mes_cajas": 105205,
+    "pct_volumen_unidades": 95.77,
+    "pct_volumen_cajas": 97.33
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 5639,
+    "volumen_cajas": 1000,
+    "total_mes_unidades": 304917,
+    "total_mes_cajas": 105205,
+    "pct_volumen_unidades": 1.85,
+    "pct_volumen_cajas": 0.95
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 3890,
+    "volumen_cajas": 1067,
+    "total_mes_unidades": 304917,
+    "total_mes_cajas": 105205,
+    "pct_volumen_unidades": 1.28,
+    "pct_volumen_cajas": 1.01
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 1621,
+    "volumen_cajas": 372,
+    "total_mes_unidades": 304917,
+    "total_mes_cajas": 105205,
+    "pct_volumen_unidades": 0.53,
+    "pct_volumen_cajas": 0.35
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 903,
+    "volumen_cajas": 155,
+    "total_mes_unidades": 304917,
+    "total_mes_cajas": 105205,
+    "pct_volumen_unidades": 0.3,
+    "pct_volumen_cajas": 0.15
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 434,
+    "volumen_cajas": 84,
+    "total_mes_unidades": 304917,
+    "total_mes_cajas": 105205,
+    "pct_volumen_unidades": 0.14,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 137,
+    "volumen_cajas": 56,
+    "total_mes_unidades": 304917,
+    "total_mes_cajas": 105205,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 77,
+    "volumen_cajas": 20,
+    "total_mes_unidades": 304917,
+    "total_mes_cajas": 105205,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 30,
+    "volumen_cajas": 6,
+    "total_mes_unidades": 304917,
+    "total_mes_cajas": 105205,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-04",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 170,
+    "volumen_cajas": 48,
+    "total_mes_unidades": 304917,
+    "total_mes_cajas": 105205,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 365961,
+    "volumen_cajas": 126974,
+    "total_mes_unidades": 381593,
+    "total_mes_cajas": 129957,
+    "pct_volumen_unidades": 95.9,
+    "pct_volumen_cajas": 97.7
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 6734,
+    "volumen_cajas": 1217,
+    "total_mes_unidades": 381593,
+    "total_mes_cajas": 129957,
+    "pct_volumen_unidades": 1.76,
+    "pct_volumen_cajas": 0.94
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 4184,
+    "volumen_cajas": 924,
+    "total_mes_unidades": 381593,
+    "total_mes_cajas": 129957,
+    "pct_volumen_unidades": 1.1,
+    "pct_volumen_cajas": 0.71
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 2078,
+    "volumen_cajas": 382,
+    "total_mes_unidades": 381593,
+    "total_mes_cajas": 129957,
+    "pct_volumen_unidades": 0.54,
+    "pct_volumen_cajas": 0.29
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 994,
+    "volumen_cajas": 167,
+    "total_mes_unidades": 381593,
+    "total_mes_cajas": 129957,
+    "pct_volumen_unidades": 0.26,
+    "pct_volumen_cajas": 0.13
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 694,
+    "volumen_cajas": 65,
+    "total_mes_unidades": 381593,
+    "total_mes_cajas": 129957,
+    "pct_volumen_unidades": 0.18,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 448,
+    "volumen_cajas": 86,
+    "total_mes_unidades": 381593,
+    "total_mes_cajas": 129957,
+    "pct_volumen_unidades": 0.12,
+    "pct_volumen_cajas": 0.07
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 17,
+    "volumen_cajas": 11,
+    "total_mes_unidades": 381593,
+    "total_mes_cajas": 129957,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 37,
+    "volumen_cajas": 10,
+    "total_mes_unidades": 381593,
+    "total_mes_cajas": 129957,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-05",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 446,
+    "volumen_cajas": 121,
+    "total_mes_unidades": 381593,
+    "total_mes_cajas": 129957,
+    "pct_volumen_unidades": 0.12,
+    "pct_volumen_cajas": 0.09
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 618802,
+    "volumen_cajas": 194796,
+    "total_mes_unidades": 642776,
+    "total_mes_cajas": 199459,
+    "pct_volumen_unidades": 96.27,
+    "pct_volumen_cajas": 97.66
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 4063,
+    "volumen_cajas": 795,
+    "total_mes_unidades": 642776,
+    "total_mes_cajas": 199459,
+    "pct_volumen_unidades": 0.63,
+    "pct_volumen_cajas": 0.4
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 4327,
+    "volumen_cajas": 784,
+    "total_mes_unidades": 642776,
+    "total_mes_cajas": 199459,
+    "pct_volumen_unidades": 0.67,
+    "pct_volumen_cajas": 0.39
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 3665,
+    "volumen_cajas": 435,
+    "total_mes_unidades": 642776,
+    "total_mes_cajas": 199459,
+    "pct_volumen_unidades": 0.57,
+    "pct_volumen_cajas": 0.22
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1116,
+    "volumen_cajas": 250,
+    "total_mes_unidades": 642776,
+    "total_mes_cajas": 199459,
+    "pct_volumen_unidades": 0.17,
+    "pct_volumen_cajas": 0.13
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 1256,
+    "volumen_cajas": 207,
+    "total_mes_unidades": 642776,
+    "total_mes_cajas": 199459,
+    "pct_volumen_unidades": 0.2,
+    "pct_volumen_cajas": 0.1
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 656,
+    "volumen_cajas": 203,
+    "total_mes_unidades": 642776,
+    "total_mes_cajas": 199459,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.1
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 540,
+    "volumen_cajas": 101,
+    "total_mes_unidades": 642776,
+    "total_mes_cajas": 199459,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 406,
+    "volumen_cajas": 107,
+    "total_mes_unidades": 642776,
+    "total_mes_cajas": 199459,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-06",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 7945,
+    "volumen_cajas": 1781,
+    "total_mes_unidades": 642776,
+    "total_mes_cajas": 199459,
+    "pct_volumen_unidades": 1.24,
+    "pct_volumen_cajas": 0.89
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 766700,
+    "volumen_cajas": 264985,
+    "total_mes_unidades": 792224,
+    "total_mes_cajas": 270877,
+    "pct_volumen_unidades": 96.78,
+    "pct_volumen_cajas": 97.82
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 9028,
+    "volumen_cajas": 2180,
+    "total_mes_unidades": 792224,
+    "total_mes_cajas": 270877,
+    "pct_volumen_unidades": 1.14,
+    "pct_volumen_cajas": 0.8
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 8430,
+    "volumen_cajas": 1765,
+    "total_mes_unidades": 792224,
+    "total_mes_cajas": 270877,
+    "pct_volumen_unidades": 1.06,
+    "pct_volumen_cajas": 0.65
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 3687,
+    "volumen_cajas": 938,
+    "total_mes_unidades": 792224,
+    "total_mes_cajas": 270877,
+    "pct_volumen_unidades": 0.47,
+    "pct_volumen_cajas": 0.35
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1690,
+    "volumen_cajas": 433,
+    "total_mes_unidades": 792224,
+    "total_mes_cajas": 270877,
+    "pct_volumen_unidades": 0.21,
+    "pct_volumen_cajas": 0.16
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 718,
+    "volumen_cajas": 215,
+    "total_mes_unidades": 792224,
+    "total_mes_cajas": 270877,
+    "pct_volumen_unidades": 0.09,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 647,
+    "volumen_cajas": 86,
+    "total_mes_unidades": 792224,
+    "total_mes_cajas": 270877,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 310,
+    "volumen_cajas": 39,
+    "total_mes_unidades": 792224,
+    "total_mes_cajas": 270877,
+    "pct_volumen_unidades": 0.04,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 109,
+    "volumen_cajas": 16,
+    "total_mes_unidades": 792224,
+    "total_mes_cajas": 270877,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-07",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 905,
+    "volumen_cajas": 220,
+    "total_mes_unidades": 792224,
+    "total_mes_cajas": 270877,
+    "pct_volumen_unidades": 0.11,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 714782,
+    "volumen_cajas": 238659,
+    "total_mes_unidades": 736818,
+    "total_mes_cajas": 243286,
+    "pct_volumen_unidades": 97.01,
+    "pct_volumen_cajas": 98.1
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 9553,
+    "volumen_cajas": 2047,
+    "total_mes_unidades": 736818,
+    "total_mes_cajas": 243286,
+    "pct_volumen_unidades": 1.3,
+    "pct_volumen_cajas": 0.84
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 6107,
+    "volumen_cajas": 1144,
+    "total_mes_unidades": 736818,
+    "total_mes_cajas": 243286,
+    "pct_volumen_unidades": 0.83,
+    "pct_volumen_cajas": 0.47
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 1610,
+    "volumen_cajas": 471,
+    "total_mes_unidades": 736818,
+    "total_mes_cajas": 243286,
+    "pct_volumen_unidades": 0.22,
+    "pct_volumen_cajas": 0.19
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1780,
+    "volumen_cajas": 323,
+    "total_mes_unidades": 736818,
+    "total_mes_cajas": 243286,
+    "pct_volumen_unidades": 0.24,
+    "pct_volumen_cajas": 0.13
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 1042,
+    "volumen_cajas": 262,
+    "total_mes_unidades": 736818,
+    "total_mes_cajas": 243286,
+    "pct_volumen_unidades": 0.14,
+    "pct_volumen_cajas": 0.11
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 693,
+    "volumen_cajas": 93,
+    "total_mes_unidades": 736818,
+    "total_mes_cajas": 243286,
+    "pct_volumen_unidades": 0.09,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 176,
+    "volumen_cajas": 77,
+    "total_mes_unidades": 736818,
+    "total_mes_cajas": 243286,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 400,
+    "volumen_cajas": 64,
+    "total_mes_unidades": 736818,
+    "total_mes_cajas": 243286,
+    "pct_volumen_unidades": 0.05,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-08",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 675,
+    "volumen_cajas": 146,
+    "total_mes_unidades": 736818,
+    "total_mes_cajas": 243286,
+    "pct_volumen_unidades": 0.09,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 678196,
+    "volumen_cajas": 253150,
+    "total_mes_unidades": 703899,
+    "total_mes_cajas": 258891,
+    "pct_volumen_unidades": 96.35,
+    "pct_volumen_cajas": 97.78
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 9509,
+    "volumen_cajas": 2057,
+    "total_mes_unidades": 703899,
+    "total_mes_cajas": 258891,
+    "pct_volumen_unidades": 1.35,
+    "pct_volumen_cajas": 0.79
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 6720,
+    "volumen_cajas": 1710,
+    "total_mes_unidades": 703899,
+    "total_mes_cajas": 258891,
+    "pct_volumen_unidades": 0.95,
+    "pct_volumen_cajas": 0.66
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 3458,
+    "volumen_cajas": 870,
+    "total_mes_unidades": 703899,
+    "total_mes_cajas": 258891,
+    "pct_volumen_unidades": 0.49,
+    "pct_volumen_cajas": 0.34
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1632,
+    "volumen_cajas": 358,
+    "total_mes_unidades": 703899,
+    "total_mes_cajas": 258891,
+    "pct_volumen_unidades": 0.23,
+    "pct_volumen_cajas": 0.14
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 1527,
+    "volumen_cajas": 245,
+    "total_mes_unidades": 703899,
+    "total_mes_cajas": 258891,
+    "pct_volumen_unidades": 0.22,
+    "pct_volumen_cajas": 0.09
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 806,
+    "volumen_cajas": 196,
+    "total_mes_unidades": 703899,
+    "total_mes_cajas": 258891,
+    "pct_volumen_unidades": 0.11,
+    "pct_volumen_cajas": 0.08
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 740,
+    "volumen_cajas": 63,
+    "total_mes_unidades": 703899,
+    "total_mes_cajas": 258891,
+    "pct_volumen_unidades": 0.11,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 506,
+    "volumen_cajas": 64,
+    "total_mes_unidades": 703899,
+    "total_mes_cajas": 258891,
+    "pct_volumen_unidades": 0.07,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-09",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 805,
+    "volumen_cajas": 178,
+    "total_mes_unidades": 703899,
+    "total_mes_cajas": 258891,
+    "pct_volumen_unidades": 0.11,
+    "pct_volumen_cajas": 0.07
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 538308,
+    "volumen_cajas": 211539,
+    "total_mes_unidades": 558094,
+    "total_mes_cajas": 216588,
+    "pct_volumen_unidades": 96.45,
+    "pct_volumen_cajas": 97.67
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 7754,
+    "volumen_cajas": 1762,
+    "total_mes_unidades": 558094,
+    "total_mes_cajas": 216588,
+    "pct_volumen_unidades": 1.39,
+    "pct_volumen_cajas": 0.81
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 6536,
+    "volumen_cajas": 1742,
+    "total_mes_unidades": 558094,
+    "total_mes_cajas": 216588,
+    "pct_volumen_unidades": 1.17,
+    "pct_volumen_cajas": 0.8
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 1624,
+    "volumen_cajas": 540,
+    "total_mes_unidades": 558094,
+    "total_mes_cajas": 216588,
+    "pct_volumen_unidades": 0.29,
+    "pct_volumen_cajas": 0.25
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1186,
+    "volumen_cajas": 309,
+    "total_mes_unidades": 558094,
+    "total_mes_cajas": 216588,
+    "pct_volumen_unidades": 0.21,
+    "pct_volumen_cajas": 0.14
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 570,
+    "volumen_cajas": 204,
+    "total_mes_unidades": 558094,
+    "total_mes_cajas": 216588,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.09
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 543,
+    "volumen_cajas": 128,
+    "total_mes_unidades": 558094,
+    "total_mes_cajas": 216588,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 573,
+    "volumen_cajas": 161,
+    "total_mes_unidades": 558094,
+    "total_mes_cajas": 216588,
+    "pct_volumen_unidades": 0.1,
+    "pct_volumen_cajas": 0.07
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 326,
+    "volumen_cajas": 47,
+    "total_mes_unidades": 558094,
+    "total_mes_cajas": 216588,
+    "pct_volumen_unidades": 0.06,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-10",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 674,
+    "volumen_cajas": 156,
+    "total_mes_unidades": 558094,
+    "total_mes_cajas": 216588,
+    "pct_volumen_unidades": 0.12,
+    "pct_volumen_cajas": 0.07
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 325056,
+    "volumen_cajas": 137491,
+    "total_mes_unidades": 336687,
+    "total_mes_cajas": 140522,
+    "pct_volumen_unidades": 96.55,
+    "pct_volumen_cajas": 97.84
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 1600,
+    "volumen_cajas": 526,
+    "total_mes_unidades": 336687,
+    "total_mes_cajas": 140522,
+    "pct_volumen_unidades": 0.48,
+    "pct_volumen_cajas": 0.37
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 3621,
+    "volumen_cajas": 874,
+    "total_mes_unidades": 336687,
+    "total_mes_cajas": 140522,
+    "pct_volumen_unidades": 1.08,
+    "pct_volumen_cajas": 0.62
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 2542,
+    "volumen_cajas": 599,
+    "total_mes_unidades": 336687,
+    "total_mes_cajas": 140522,
+    "pct_volumen_unidades": 0.76,
+    "pct_volumen_cajas": 0.43
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 1689,
+    "volumen_cajas": 469,
+    "total_mes_unidades": 336687,
+    "total_mes_cajas": 140522,
+    "pct_volumen_unidades": 0.5,
+    "pct_volumen_cajas": 0.33
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 1358,
+    "volumen_cajas": 348,
+    "total_mes_unidades": 336687,
+    "total_mes_cajas": 140522,
+    "pct_volumen_unidades": 0.4,
+    "pct_volumen_cajas": 0.25
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 267,
+    "volumen_cajas": 57,
+    "total_mes_unidades": 336687,
+    "total_mes_cajas": 140522,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 284,
+    "volumen_cajas": 66,
+    "total_mes_unidades": 336687,
+    "total_mes_cajas": 140522,
+    "pct_volumen_unidades": 0.08,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 109,
+    "volumen_cajas": 37,
+    "total_mes_unidades": 336687,
+    "total_mes_cajas": 140522,
+    "pct_volumen_unidades": 0.03,
+    "pct_volumen_cajas": 0.03
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-11",
+    "bucket_dias": "Rezago (>90 días)",
+    "volumen_unidades": 161,
+    "volumen_cajas": 55,
+    "total_mes_unidades": 336687,
+    "total_mes_cajas": 140522,
+    "pct_volumen_unidades": 0.05,
+    "pct_volumen_cajas": 0.04
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 421534,
+    "volumen_cajas": 180298,
+    "total_mes_unidades": 444511,
+    "total_mes_cajas": 187672,
+    "pct_volumen_unidades": 94.83,
+    "pct_volumen_cajas": 96.07
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 6547,
+    "volumen_cajas": 2437,
+    "total_mes_unidades": 444511,
+    "total_mes_cajas": 187672,
+    "pct_volumen_unidades": 1.47,
+    "pct_volumen_cajas": 1.3
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 8576,
+    "volumen_cajas": 2840,
+    "total_mes_unidades": 444511,
+    "total_mes_cajas": 187672,
+    "pct_volumen_unidades": 1.93,
+    "pct_volumen_cajas": 1.51
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 4437,
+    "volumen_cajas": 1325,
+    "total_mes_unidades": 444511,
+    "total_mes_cajas": 187672,
+    "pct_volumen_unidades": 1.0,
+    "pct_volumen_cajas": 0.71
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 2370,
+    "volumen_cajas": 517,
+    "total_mes_unidades": 444511,
+    "total_mes_cajas": 187672,
+    "pct_volumen_unidades": 0.53,
+    "pct_volumen_cajas": 0.28
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 527,
+    "volumen_cajas": 108,
+    "total_mes_unidades": 444511,
+    "total_mes_cajas": 187672,
+    "pct_volumen_unidades": 0.12,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "61-70 días",
+    "volumen_unidades": 412,
+    "volumen_cajas": 118,
+    "total_mes_unidades": 444511,
+    "total_mes_cajas": 187672,
+    "pct_volumen_unidades": 0.09,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "71-80 días",
+    "volumen_unidades": 78,
+    "volumen_cajas": 19,
+    "total_mes_unidades": 444511,
+    "total_mes_cajas": 187672,
+    "pct_volumen_unidades": 0.02,
+    "pct_volumen_cajas": 0.01
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "81-90 días",
+    "volumen_unidades": 7,
+    "volumen_cajas": 6,
+    "total_mes_unidades": 444511,
+    "total_mes_cajas": 187672,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2025-12",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 23,
+    "volumen_cajas": 4,
+    "total_mes_unidades": 444511,
+    "total_mes_cajas": 187672,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 778485,
+    "volumen_cajas": 284284,
+    "total_mes_unidades": 805542,
+    "total_mes_cajas": 290514,
+    "pct_volumen_unidades": 96.64,
+    "pct_volumen_cajas": 97.86
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 11813,
+    "volumen_cajas": 2821,
+    "total_mes_unidades": 805542,
+    "total_mes_cajas": 290514,
+    "pct_volumen_unidades": 1.47,
+    "pct_volumen_cajas": 0.97
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 10525,
+    "volumen_cajas": 2191,
+    "total_mes_unidades": 805542,
+    "total_mes_cajas": 290514,
+    "pct_volumen_unidades": 1.31,
+    "pct_volumen_cajas": 0.75
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "31-40 días",
+    "volumen_unidades": 3677,
+    "volumen_cajas": 897,
+    "total_mes_unidades": 805542,
+    "total_mes_cajas": 290514,
+    "pct_volumen_unidades": 0.46,
+    "pct_volumen_cajas": 0.31
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "41-50 días",
+    "volumen_unidades": 595,
+    "volumen_cajas": 168,
+    "total_mes_unidades": 805542,
+    "total_mes_cajas": 290514,
+    "pct_volumen_unidades": 0.07,
+    "pct_volumen_cajas": 0.06
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "51-60 días",
+    "volumen_unidades": 4,
+    "volumen_cajas": 3,
+    "total_mes_unidades": 805542,
+    "total_mes_cajas": 290514,
+    "pct_volumen_unidades": 0.0,
+    "pct_volumen_cajas": 0.0
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2026-01",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 443,
+    "volumen_cajas": 150,
+    "total_mes_unidades": 805542,
+    "total_mes_cajas": 290514,
+    "pct_volumen_unidades": 0.05,
+    "pct_volumen_cajas": 0.05
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "0-10 días",
+    "volumen_unidades": 380652,
+    "volumen_cajas": 133340,
+    "total_mes_unidades": 391225,
+    "total_mes_cajas": 137723,
+    "pct_volumen_unidades": 97.3,
+    "pct_volumen_cajas": 96.82
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "11-20 días",
+    "volumen_unidades": 549,
+    "volumen_cajas": 214,
+    "total_mes_unidades": 391225,
+    "total_mes_cajas": 137723,
+    "pct_volumen_unidades": 0.14,
+    "pct_volumen_cajas": 0.16
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "21-30 días",
+    "volumen_unidades": 54,
+    "volumen_cajas": 24,
+    "total_mes_unidades": 391225,
+    "total_mes_cajas": 137723,
+    "pct_volumen_unidades": 0.01,
+    "pct_volumen_cajas": 0.02
+  },
+  {
+    "site": "MLM",
+    "mes_entrada": "2026-02",
+    "bucket_dias": "Pendiente (<90 días)",
+    "volumen_unidades": 9970,
+    "volumen_cajas": 4145,
+    "total_mes_unidades": 391225,
+    "total_mes_cajas": 137723,
+    "pct_volumen_unidades": 2.55,
+    "pct_volumen_cajas": 3.01
+  }
+];
+
+    var BUCKETS_ORDER = ['0-10 días','11-20 días','21-30 días','31-40 días','41-50 días','51-60 días','61-70 días','71-80 días','81-90 días','Rezago (>90 días)','Pendiente (<90 días)'];
+
+    var MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    function formatMesCorto(mes) {
+      if (!mes || mes === 'Total') return mes || '–';
+      var parts = mes.split('-');
+      if (parts.length !== 2) return mes;
+      var y = parseInt(parts[0], 10);
+      var m = parseInt(parts[1], 10);
+      if (isNaN(y) || isNaN(m) || m < 1 || m > 12) return mes;
+      return MESES_CORTOS[m - 1] + String(y).slice(-2);
+    }
+
+    function renderResumen() {
+      var byMes = {};
+      datosDetalle.forEach(function(r) {
+        var m = r.mes_entrada;
+        if (!byMes[m]) byMes[m] = {};
+        byMes[m][r.bucket_dias] = r.pct_volumen_unidades;
+      });
+      var meses = Object.keys(byMes).sort(function(a, b) {
+        if (a === 'Total') return -1;
+        if (b === 'Total') return 1;
+        return a < b ? -1 : a > b ? 1 : 0;
+      });
+      var thead = document.getElementById('tabla-resumen-head');
+      thead.innerHTML = '<th>Mes entrada</th>';
+      BUCKETS_ORDER.forEach(function(b) {
+        var th = document.createElement('th');
+        if (b === 'Rezago (>90 días)') th.textContent = 'Rezago';
+        else if (b === 'Pendiente (<90 días)') th.textContent = 'Pendiente';
+        else th.textContent = b.indexOf('días') !== -1 ? b.replace(' días','') : b;
+        th.setAttribute('title', b);
+        if (b === 'Rezago (>90 días)' || b === 'Pendiente (<90 días)') th.className = 'col-centro';
+        thead.appendChild(th);
+      });
+      var tbody = document.getElementById('tabla-resumen-body');
+      tbody.innerHTML = '';
+      meses.forEach(function(mes) {
+        var tr = document.createElement('tr');
+        if (mes === 'Total') tr.className = 'fila-total';
+        var td0 = document.createElement('td');
+        td0.textContent = formatMesCorto(mes);
+        tr.appendChild(td0);
+        BUCKETS_ORDER.forEach(function(b, idx) {
+          var td = document.createElement('td');
+          td.className = 'num';
+          if (b === 'Rezago (>90 días)' || b === 'Pendiente (<90 días)') td.className = 'num col-centro';
+          if (b === 'Pendiente (<90 días)') td.classList.add('col-pendiente');
+          var v = byMes[mes][b];
+          td.textContent = (v != null && v !== '') ? (typeof v === 'number' ? v.toFixed(2) + '%' : v + '%') : '–';
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function aplicarFiltros() {
+      var selSite = document.getElementById('filtro-site');
+      var selMes = document.getElementById('filtro-mes');
+      if (!selSite || !selMes) return;
+      var siteVal = selSite.value;
+      var mesVal = selMes.value;
+      var filas = datosDetalle.filter(function(r) {
+        if (siteVal !== 'Todos' && r.site !== siteVal) return false;
+        if (mesVal !== 'Todos' && r.mes_entrada !== mesVal) return false;
+        return true;
+      });
+      var tbody = document.getElementById('tabla-detalle-body');
+      var leyenda = document.getElementById('tabla-detalle-leyenda');
+      if (!tbody || !leyenda) return;
+      tbody.innerHTML = '';
+      if (filas.length === 0) {
+        leyenda.style.display = 'block';
+        leyenda.textContent = 'Sin datos para la combinación Site + Mes seleccionada.';
+        return;
+      }
+      leyenda.style.display = 'none';
+      filas.forEach(function(r) {
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td>' + (r.site || '–') + '</td>' +
+          '<td>' + formatMesCorto(r.mes_entrada) + '</td>' +
+          '<td>' + (r.bucket_dias || '–') + '</td>' +
+          '<td class="num">' + (typeof r.volumen_unidades === 'number' ? r.volumen_unidades.toLocaleString('es') : (r.volumen_unidades || '–')) + '</td>' +
+          '<td class="num">' + (typeof r.volumen_cajas === 'number' ? r.volumen_cajas.toLocaleString('es') : (r.volumen_cajas || '–')) + '</td>' +
+          '<td class="num">' + (typeof r.total_mes_unidades === 'number' ? r.total_mes_unidades.toLocaleString('es') : (r.total_mes_unidades || '–')) + '</td>' +
+          '<td class="num">' + (typeof r.total_mes_cajas === 'number' ? r.total_mes_cajas.toLocaleString('es') : (r.total_mes_cajas || '–')) + '</td>' +
+          '<td class="num">' + (typeof r.pct_volumen_unidades === 'number' ? r.pct_volumen_unidades + '%' : (r.pct_volumen_unidades != null ? r.pct_volumen_unidades + '%' : '–')) + '</td>' +
+          '<td class="num">' + (typeof r.pct_volumen_cajas === 'number' ? r.pct_volumen_cajas + '%' : (r.pct_volumen_cajas != null ? r.pct_volumen_cajas + '%' : '–')) + '</td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    function rellenarOpcionesMes() {
+      var meses = [];
+      var seen = {};
+      datosDetalle.forEach(function(r) {
+        var m = r.mes_entrada;
+        if (m && !seen[m]) { seen[m] = true; meses.push(m); }
+      });
+      meses.sort(function(a, b) {
+        if (a === 'Total') return -1;
+        if (b === 'Total') return 1;
+        return a < b ? -1 : a > b ? 1 : 0;
+      });
+      var sel = document.getElementById('filtro-mes');
+      sel.innerHTML = '<option value="Todos">Todos</option>';
+      meses.forEach(function(m) {
+        var opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = formatMesCorto(m);
+        sel.appendChild(opt);
+      });
+    }
+
+    function initTablas() {
+      window.aplicarFiltros = aplicarFiltros;
+      var contenedor = document.getElementById('filtros-detalle');
+      if (contenedor) contenedor.addEventListener('change', aplicarFiltros);
+      var elSite = document.getElementById('filtro-site');
+      var elMes = document.getElementById('filtro-mes');
+      if (elSite) {
+        elSite.setAttribute('onchange', 'aplicarFiltros()');
+      }
+      if (elMes) elMes.onchange = aplicarFiltros;
+      rellenarOpcionesMes();
+      renderResumen();
+      aplicarFiltros();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initTablas);
+    } else {
+      initTablas();
+    }
+  </script>
+</body>
+</html>
