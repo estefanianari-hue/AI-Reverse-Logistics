@@ -5107,6 +5107,12 @@
       return MESES_CORTOS[m - 1] + String(y).slice(-2);
     }
 
+    function formatPct(v) {
+      if (v == null || v === '') return '–';
+      var n = Number(v);
+      return isNaN(n) ? (v + '%') : n.toFixed(2) + '%';
+    }
+
     function renderResumen() {
       var byMes = {};
       datosDetalle.forEach(function(r) {
@@ -5144,7 +5150,7 @@
           if (b === 'Rezago (>90 días)' || b === 'Pendiente (<90 días)') td.className = 'num col-centro';
           if (b === 'Pendiente (<90 días)') td.classList.add('col-pendiente');
           var v = byMes[mes][b];
-          td.textContent = (v != null && v !== '') ? (typeof v === 'number' ? v.toFixed(2) + '%' : v + '%') : '–';
+          td.textContent = formatPct(v);
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -5182,8 +5188,8 @@
           '<td class="num">' + (typeof r.volumen_cajas === 'number' ? r.volumen_cajas.toLocaleString('es') : (r.volumen_cajas || '–')) + '</td>' +
           '<td class="num">' + (typeof r.total_mes_unidades === 'number' ? r.total_mes_unidades.toLocaleString('es') : (r.total_mes_unidades || '–')) + '</td>' +
           '<td class="num">' + (typeof r.total_mes_cajas === 'number' ? r.total_mes_cajas.toLocaleString('es') : (r.total_mes_cajas || '–')) + '</td>' +
-          '<td class="num">' + (typeof r.pct_volumen_unidades === 'number' ? r.pct_volumen_unidades + '%' : (r.pct_volumen_unidades != null ? r.pct_volumen_unidades + '%' : '–')) + '</td>' +
-          '<td class="num">' + (typeof r.pct_volumen_cajas === 'number' ? r.pct_volumen_cajas + '%' : (r.pct_volumen_cajas != null ? r.pct_volumen_cajas + '%' : '–')) + '</td>';
+          '<td class="num">' + (typeof r.pct_volumen_unidades === 'number' ? formatPct(r.pct_volumen_unidades) : formatPct(r.pct_volumen_unidades)) + '</td>' +
+          '<td class="num">' + (typeof r.pct_volumen_cajas === 'number' ? formatPct(r.pct_volumen_cajas) : formatPct(r.pct_volumen_cajas)) + '</td>';
         tbody.appendChild(tr);
       });
     }
