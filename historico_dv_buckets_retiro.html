@@ -5094,6 +5094,18 @@
   }
 ];
 
+    // Normalizar todos los % a 2 decimales (por si el JSON trae 87.5 o 69)
+    datosDetalle.forEach(function(r) {
+      if (r.pct_volumen_unidades != null && r.pct_volumen_unidades !== '') {
+        var n = Number(r.pct_volumen_unidades);
+        if (!isNaN(n)) r.pct_volumen_unidades = n.toFixed(2);
+      }
+      if (r.pct_volumen_cajas != null && r.pct_volumen_cajas !== '') {
+        var n = Number(r.pct_volumen_cajas);
+        if (!isNaN(n)) r.pct_volumen_cajas = n.toFixed(2);
+      }
+    });
+
     var BUCKETS_ORDER = ['0-10 días','11-20 días','21-30 días','31-40 días','41-50 días','51-60 días','61-70 días','71-80 días','81-90 días','Rezago (>90 días)','Pendiente (<90 días)'];
 
     var MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
