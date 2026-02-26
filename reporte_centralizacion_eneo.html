@@ -35,11 +35,13 @@
     .kpi-card .value { font-size: 1.75rem; font-weight: 700; color: #333; }
     .kpi-card .label { font-size: 0.85rem; color: #666; margin-top: 4px; }
     table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.08); border-radius: 4px; overflow: hidden; }
-    th, td { padding: 12px 16px; text-align: left; }
+    th, td { padding: 12px 16px; }
+    table th:first-child, table td:first-child { text-align: left; }
+    table th:not(:first-child), table td:not(:first-child) { text-align: center; }
     th { background: #3483fa; color: #fff; font-weight: 600; }
     tr:nth-child(even) { background: #f9f9f9; }
     tr:hover { background: #f0f7ff; }
-    .number { text-align: right; font-variant-numeric: tabular-nums; }
+    table .number { font-variant-numeric: tabular-nums; }
     .note { font-size: 0.9rem; color: #666; margin-bottom: 16px; }
     .section-seguimiento { border-left: 4px solid #3483fa; padding-left: 16px; margin-bottom: 32px; }
     .section-estrategico { border-left: 4px solid #00a650; padding-left: 16px; margin-bottom: 32px; }
@@ -91,7 +93,7 @@
         <tbody>          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">8074</td></tr>
           <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">3414</td></tr>
           <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">664</td></tr>
-          <tr><td>destino 2.0 aún no encontrado</td><td>destino 2.0 aún no encontrado</td><td class="number">276</td></tr>
+          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">276</td></tr>
           <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">11</td></tr>
 </tbody>
       </table>
@@ -117,7 +119,7 @@
         <tbody>          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">8074</td></tr>
           <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">3414</td></tr>
           <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">664</td></tr>
-          <tr><td>destino 2.0 aún no encontrado</td><td>destino 2.0 aún no encontrado</td><td class="number">276</td></tr>
+          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">276</td></tr>
           <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">11</td></tr>
 </tbody>
       </table>
@@ -165,7 +167,7 @@
     </div>
 
     <h2>Parte 2 – Estratégico</h2>
-    <p class="note">Indicadores que prometimos mejorar o no empeorar: reducción de XDs en tramos; más adelante costo, lead time, promesa.</p>
+    <p class="note">Indicadores que prometimos mejorar: reducción de XDs en tramos; costos, lead time, promesa.</p>
 
     <div class="section-estrategico">
       <h3>2.1 Reducción estimada de cantidad de XDs en los tramos</h3>
@@ -200,7 +202,7 @@
       </table>
 
       <h3>2.2 Indicadores no incluidos aún</h3>
-      <p class="note">Costo, lead time, promesa — siguiente iteración cuando haya fuente y definición.</p>
+      <p class="note">Costos, lead time, promesa — siguiente iteración cuando haya fuente y definición.</p>
     </div>
 
     <div class="footer">
