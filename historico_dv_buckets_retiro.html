@@ -100,6 +100,7 @@
       <strong>Box</strong> (FBM_WIT_BOX_ID = box-id, FBM_WITH_PARCEL_ID) →<br>
       <strong>Shipment</strong> (SHP_EXTERNAL_REFERENCE_ID = FBM_WITH_PARCEL_ID, SHP_SHIPMENT_TYPE = 'withdrawal', SHP_DATETIME_CREATED)
     </div>
+    <p>Se toma la <strong>primera vez</strong> que cada box aparece en Movement (por box_id ordenado por fecha); así la solicitud de retiro nunca queda antes de la entrada a DV.</p>
     <p><strong>Ejemplo de validación:</strong> box-id <code>805554805-17</code> en Movement creado 2025-07-31 22:15 → mismo box en Withdrawals Boxes (<code>FBM_WIT_BOX_ID</code>) con <code>FBM_WITH_PARCEL_ID</code> → el shipment con <code>SHP_EXTERNAL_REFERENCE_ID</code> = ese parcel, tipo withdrawal, fue creado 2025-08-01 17:05:50. Días hasta retiro = 1 (aprox.).</p>
 
     <h2>4. Buckets de días</h2>
@@ -140,14 +141,13 @@
     <h2>6. Parámetros</h2>
     <ul>
       <li><strong>FECHA_DESDE / FECHA_HASTA:</strong> rango de fechas de <strong>entrada a DV</strong> (Movement). En la query se definen por DECLARE; puede usarse <strong>OPCIÓN A</strong> (histórico completo desde 2025-01-01), <strong>OPCIÓN B</strong> (un solo mes, ej. 2025-03) o <strong>OPCIÓN C</strong> (últimos 3 meses). Solo una opción activa a la vez.</li>
-      <li>La query <strong>completa</strong> incluye detalle por <strong>site</strong> (SIT_SITE_ID: MLM, MLA, etc.). El filtro Site en este documento filtra por esa columna. Si usás la query LITE (un mes, MLM), los datos tendrán un solo site.</li>
+      <li>La query incluye detalle por <strong>site</strong> (SIT_SITE_ID de Boxes: MLM, MLA, etc.). El filtro Site en este documento filtra por esa columna.</li>
     </ul>
 
     <h2>7. Archivos del análisis</h2>
     <ul>
       <li><strong>Query principal:</strong> <code>analisis_dv_retiros_buckets/sql/query_historico_dv_buckets_retiro.sql</code> (ejecutar en proyecto <code>meli-bi-data</code>).</li>
-      <li><strong>Query LITE:</strong> <code>query_historico_dv_buckets_retiro_LITE.sql</code> (un mes, validación rápida).</li>
-      <li><strong>Documentación:</strong> <code>analisis_dv_retiros_buckets/README.md</code>. Script para ejecutar y actualizar este HTML: <code>scripts/ejecutar_query_dv_buckets.py</code> (con <code>--html</code> y opcionalmente <code>--completa</code>).</li>
+      <li><strong>Documentación:</strong> <code>analisis_dv_retiros_buckets/README.md</code>. Script para ejecutar y actualizar este HTML: <code>scripts/ejecutar_query_dv_buckets.py</code> con <code>--html</code> (o <code>--from-csv --html</code> para refrescar desde el CSV sin correr la query).</li>
     </ul>
 
     <div class="note">
