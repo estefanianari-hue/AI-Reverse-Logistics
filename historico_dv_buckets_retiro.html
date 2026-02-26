@@ -100,7 +100,7 @@
       <strong>Box</strong> (FBM_WIT_BOX_ID = box-id, FBM_WITH_PARCEL_ID) →<br>
       <strong>Shipment</strong> (SHP_EXTERNAL_REFERENCE_ID = FBM_WITH_PARCEL_ID, SHP_SHIPMENT_TYPE = 'withdrawal', SHP_DATETIME_CREATED)
     </div>
-    <p>Se toma la <strong>primera vez</strong> que cada box aparece en Movement (por box_id ordenado por fecha); así la solicitud de retiro nunca queda antes de la entrada a DV.</p>
+    <p>Se toma la <strong>primera vez</strong> que cada box aparece en Movement (por box_id ordenado por fecha).</p>
     <p><strong>Ejemplo de validación:</strong> box-id <code>805554805-17</code> en Movement creado 2025-07-31 22:15 → mismo box en Withdrawals Boxes (<code>FBM_WIT_BOX_ID</code>) con <code>FBM_WITH_PARCEL_ID</code> → el shipment con <code>SHP_EXTERNAL_REFERENCE_ID</code> = ese parcel, tipo withdrawal, fue creado 2025-08-01 17:05:50. Días hasta retiro = 1 (aprox.).</p>
 
     <h2>4. Buckets de días</h2>
