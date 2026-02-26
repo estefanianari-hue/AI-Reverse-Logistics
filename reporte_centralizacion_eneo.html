@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Centralización EnoE – Reporte</title>
+  <title>Centralización EnoE (MLM) – Dashboard</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -14,7 +14,7 @@
       padding: 24px;
       line-height: 1.5;
     }
-    .container { max-width: 960px; margin: 0 auto; }
+    .container { max-width: 1200px; margin: 0 auto; }
     h1 {
       color: #ffe600;
       background: #3483fa;
@@ -23,199 +23,194 @@
       font-size: 1.5rem;
       font-weight: 700;
     }
-    h2 {
-      color: #3483fa;
-      font-size: 1.2rem;
-      margin-top: 32px;
-      margin-bottom: 12px;
-      padding-bottom: 6px;
-      border-bottom: 2px solid #ffe600;
-    }
-    .kpi {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 24px;
-    }
-    .kpi-card {
-      background: #f5f5f5;
-      border-left: 4px solid #3483fa;
-      padding: 16px 20px;
-      min-width: 140px;
-      border-radius: 4px;
-    }
+    h2 { color: #3483fa; font-size: 1.25rem; margin-top: 32px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #ffe600; }
+    h3 { color: #333; font-size: 1rem; margin-top: 20px; margin-bottom: 8px; }
+    .filtros { background: #f7f9fc; border: 1px solid #e3e8ef; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+    .filtros label { font-weight: 600; color: #333; font-size: 0.9rem; }
+    .filtros select, .filtros input { padding: 8px 12px; border: 1px solid #c4c9d1; border-radius: 4px; font-size: 0.9rem; }
+    .kpi { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+    .kpi-card { background: #f5f5f5; border-left: 4px solid #3483fa; padding: 16px 20px; min-width: 140px; border-radius: 4px; }
     .kpi-card.alert { border-left-color: #f23d4f; }
     .kpi-card.ok { border-left-color: #00a650; }
     .kpi-card .value { font-size: 1.75rem; font-weight: 700; color: #333; }
     .kpi-card .label { font-size: 0.85rem; color: #666; margin-top: 4px; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
-      margin-bottom: 24px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.08);
-      border-radius: 4px;
-      overflow: hidden;
-    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.08); border-radius: 4px; overflow: hidden; }
     th, td { padding: 12px 16px; text-align: left; }
-    th {
-      background: #3483fa;
-      color: #fff;
-      font-weight: 600;
-    }
+    th { background: #3483fa; color: #fff; font-weight: 600; }
     tr:nth-child(even) { background: #f9f9f9; }
     tr:hover { background: #f0f7ff; }
     .number { text-align: right; font-variant-numeric: tabular-nums; }
-    .footer {
-      margin-top: 40px;
-      padding-top: 16px;
-      border-top: 1px solid #eee;
-      font-size: 0.8rem;
-      color: #999;
-    }
+    .note { font-size: 0.9rem; color: #666; margin-bottom: 16px; }
+    .section-seguimiento { border-left: 4px solid #3483fa; padding-left: 16px; margin-bottom: 32px; }
+    .section-estrategico { border-left: 4px solid #00a650; padding-left: 16px; margin-bottom: 32px; }
+    .btn { display: inline-block; padding: 10px 20px; background: #3483fa; color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.9rem; text-decoration: none; }
+    .btn:hover { background: #2968c6; color: #fff; }
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #eee; font-size: 0.8rem; color: #999; }
+    .promedio-line { font-style: italic; color: #666; font-size: 0.85rem; }
+    .empty-state { color: #999; font-style: italic; padding: 16px; text-align: center; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Centralización EnoE (MLM) – Reporte</h1>
-    <p><strong>Fuente:</strong> meli-sbox.SBOXSHPBIPRODUCTO.Centralizacion_Datos · status_ativacao = 'depois' · CDU_valido = 'VALIDO'</p>
+    <h1>Centralización EnoE (MLM) – Dashboard</h1>
+    <p><strong>Fuente:</strong> meli-sbox.SBOXSHPBIPRODUCTO.Centralizacion_Datos + Centralizacion_Rutas (vista datos+rutas)</p>
 
-    <h2>1. Casos de error de definición de destino</h2>
-    <div class="kpi">
-      <div class="kpi-card alert">
-        <div class="value">98</div>
-        <div class="label">Nao seguiu regra (error)</div>
-      </div>
-      <div class="kpi-card ok">
-        <div class="value">137</div>
-        <div class="label">Seguiu regra</div>
-      </div>
-      <div class="kpi-card">
-        <div class="value">235</div>
-        <div class="label">Total envíos válidos</div>
-      </div>
+    <h2>Filtros</h2>
+    <div class="filtros">
+      <div><label for="site">Sitio</label><select id="site"><option value="MLM" selected>MLM</option></select></div>
+      <div><label for="fc">FC / WH</label><select id="fc"><option value="">Todos</option></select></div>
+      <div><label for="periodo-desde">Período desde</label><input type="date" id="periodo-desde" value="2026-01-01"></div>
+      <div><label for="periodo-hasta">hasta</label><input type="date" id="periodo-hasta"></div>
+      <div><label for="dimension">Dimensión</label><select id="dimension"><option value="day">Día</option><option value="week">Semana</option><option value="month" selected>Mes</option></select></div>
+      <div><label for="orden">Ordenar por</label><select id="orden"><option value="cantidad">Cantidad</option><option value="fecha">Fecha</option></select></div>
+      <button type="button" class="btn" id="btn-aplicar">Aplicar</button>
+      <button type="button" class="btn" id="btn-csv" style="background:#00a650;">Descargar CSV</button>
     </div>
-    <p>~42% de los envíos tienen error de definición de destino (WH generado ≠ WH planeado).</p>
-    <table>
-      <thead>
-        <tr>
-          <th>classificacao_regra_WH</th>
-          <th>classificacao_trocou_WH</th>
-          <th class="number">cantidad</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Nao seguiu regra</td>
-          <td>Nao trocamos WH</td>
-          <td class="number">93</td>
-        </tr>
-        <tr>
-          <td>Nao seguiu regra</td>
-          <td>Trocamos WH</td>
-          <td class="number">5</td>
-        </tr>
-        <tr>
-          <td>Seguiu regra</td>
-          <td>Trocamos WH</td>
-          <td class="number">73</td>
-        </tr>
-        <tr>
-          <td>Seguiu regra</td>
-          <td>Nao trocamos WH</td>
-          <td class="number">64</td>
-        </tr>
-      </tbody>
-    </table>
 
-    <h2>2. Tags que generaron errores</h2>
-    <p>Distribución de <strong>Flag_Identificada</strong> entre los casos &quot;Nao seguiu regra&quot;:</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Flag_Identificada</th>
-          <th class="number">cantidad</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>SORTABLE</td>
-          <td class="number">76</td>
-        </tr>
-        <tr>
-          <td>NON_TOTABLE</td>
-          <td class="number">11</td>
-        </tr>
-        <tr>
-          <td>(sin flag / NA)</td>
-          <td class="number">11</td>
-        </tr>
-      </tbody>
-    </table>
-    <p>La mayoría de los errores corresponden a ítems <strong>SORTABLE</strong> (regla &quot;depende origem&quot;). Revisar mapeo origen→destino y ítems sin flag.</p>
+    <h2>Resumen general</h2>
+    <div class="kpi">
+      <div class="kpi-card"><div class="value">12439</div><div class="label">Total envíos (después + válido)</div></div>
+      <div class="kpi-card ok"><div class="value">11488</div><div class="label">Sí siguió la regla</div></div>
+      <div class="kpi-card alert"><div class="value">675</div><div class="label">No siguió la regla</div></div>
+      <div class="kpi-card"><div class="value">5.4%</div><div class="label">% error de destino</div></div>
+      <div class="kpi-card"><div class="value">4487</div><div class="label">Con triage</div></div>
+    </div>
 
-    <h2>3. Destinos que reciben envíos que no deberían</h2>
-    <p>WH_generado que está recibiendo cuando el WH_planeado era otro:</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Destino que recibe (WH_generado)</th>
-          <th>Destino que debería (WH_planeado)</th>
-          <th class="number">envíos incorrectos</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>MXGT01</strong></td>
-          <td>MXCD09</td>
-          <td class="number">75</td>
-        </tr>
-        <tr>
-          <td><strong>MXGT01</strong></td>
-          <td>MXCD11</td>
-          <td class="number">8</td>
-        </tr>
-        <tr>
-          <td>MXCD06</td>
-          <td>MXCD09</td>
-          <td class="number">8</td>
-        </tr>
-        <tr>
-          <td>MXJC01</td>
-          <td>MXCD11</td>
-          <td class="number">2</td>
-        </tr>
-        <tr>
-          <td>MXCD06</td>
-          <td>MXJC01</td>
-          <td class="number">2</td>
-        </tr>
-        <tr>
-          <td>MXCD09</td>
-          <td>MXCD11</td>
-          <td class="number">1</td>
-        </tr>
-        <tr>
-          <td>MXCD02</td>
-          <td>MXCD09</td>
-          <td class="number">1</td>
-        </tr>
-        <tr>
-          <td>MXCD10</td>
-          <td>MXCD09</td>
-          <td class="number">1</td>
-        </tr>
-      </tbody>
-    </table>
-    <p><strong>Punto crítico:</strong> <strong>MXGT01</strong> recibe 83 envíos que no deberían ir ahí (75 a MXCD09, 8 a MXCD11). No está en el origin_map como destino de centralización; revisar por qué el autorizador envía volumen ahí. En segundo lugar, <strong>MXCD06</strong> recibe 10 envíos incorrectos.</p>
+    <h2>Parte 1 – Seguimiento</h2>
+    <p class="note">Objetivo: verificar que nada falle — casos que no cumplen la regla, triage y salidas, errores de destino, etiquetas y destinos incorrectos.</p>
+
+    <div class="section-seguimiento">
+      <h3>1.1 Casos que no cumplen la regla del autorizador</h3>
+      <p>Envíos donde <strong>WH generado ≠ WH planeado</strong>. Solo con status_ativacao = &quot;después&quot; y CDU_valido = &quot;VALIDO&quot;.</p>
+      <div class="kpi">
+        <div class="kpi-card alert"><div class="value">675</div><div class="label">No siguió la regla</div></div>
+        <div class="kpi-card ok"><div class="value">11488</div><div class="label">Sí siguió la regla</div></div>
+      </div>
+      <table id="tabla-regla">
+        <thead><tr><th>¿Siguió la regla?</th><th>¿Cambiamos WH?</th><th class="number">Cantidad</th></tr></thead>
+        <tbody>          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">8074</td></tr>
+          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">3414</td></tr>
+          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">664</td></tr>
+          <tr><td>destino 2.0 aún no encontrado</td><td>destino 2.0 aún no encontrado</td><td class="number">276</td></tr>
+          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">11</td></tr>
+</tbody>
+      </table>
+
+      <h3>1.2 Casos que pasaron por triage y qué salida tuvieron</h3>
+      <p>Cantidad de envíos que ya tienen <strong>triage</strong> y distribución por <strong>Grado</strong>, <strong>Resolución</strong>, <strong>WH triage</strong>.</p>
+      <div class="kpi">
+        <div class="kpi-card"><div class="value">4487</div><div class="label">Envíos con triage</div></div>
+      </div>
+      <table id="tabla-triage">
+        <thead><tr><th>Grado</th><th>Resolución</th><th>WH triage</th><th class="number">Cantidad</th></tr></thead>
+        <tbody>          <tr><td>A</td><td>Vendible</td><td>OK</td><td class="number">4375</td></tr>
+          <tr><td>E</td><td>No vendible</td><td>OK</td><td class="number">76</td></tr>
+          <tr><td></td><td>Descartado</td><td>OK</td><td class="number">23</td></tr>
+          <tr><td></td><td>Perdido</td><td>OK</td><td class="number">13</td></tr>
+</tbody>
+      </table>
+
+      <h3>1.3 Casos de error de definición de destino</h3>
+      <p>Clasificación por regla y por cambio de WH.</p>
+      <table id="tabla-error-destino">
+        <thead><tr><th>¿Siguió la regla?</th><th>¿Cambiamos WH?</th><th class="number">Cantidad</th></tr></thead>
+        <tbody>          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">8074</td></tr>
+          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">3414</td></tr>
+          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">664</td></tr>
+          <tr><td>destino 2.0 aún no encontrado</td><td>destino 2.0 aún no encontrado</td><td class="number">276</td></tr>
+          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">11</td></tr>
+</tbody>
+      </table>
+
+      <h3>1.4 Etiquetas que generaron errores</h3>
+      <p>Distribución de <strong>Etiqueta identificada</strong> entre los casos &quot;No siguió la regla&quot;.</p>
+      <table id="tabla-tags-error">
+        <thead><tr><th>Etiqueta identificada</th><th class="number">Cantidad</th></tr></thead>
+        <tbody>          <tr><td>SORTABLE</td><td class="number">537</td></tr>
+          <tr><td>NON_TOTABLE</td><td class="number">103</td></tr>
+          <tr><td>HV</td><td class="number">35</td></tr>
+</tbody>
+      </table>
+
+      <h3>1.5 Destinos que reciben envíos que no deberían</h3>
+      <p><strong>WH generado</strong> que está recibiendo cuando el <strong>WH planeado</strong> era otro.</p>
+      <table id="tabla-destinos-incorrectos">
+        <thead><tr><th>Destino que recibe (WH generado)</th><th>Destino que debería (WH planeado)</th><th class="number">Envíos incorrectos</th></tr></thead>
+        <tbody>          <tr><td>MXCD02</td><td>MXCD09</td><td class="number">243</td></tr>
+          <tr><td>MXCD10</td><td>MXCD09</td><td class="number">156</td></tr>
+          <tr><td>MXGT01</td><td>MXCD09</td><td class="number">48</td></tr>
+          <tr><td>MXCD05</td><td>MXCD11</td><td class="number">41</td></tr>
+          <tr><td>MXNL01</td><td>MXCD09</td><td class="number">38</td></tr>
+          <tr><td>MXCD12</td><td>MXCD11</td><td class="number">36</td></tr>
+          <tr><td>MXJC01</td><td>MXCD09</td><td class="number">24</td></tr>
+          <tr><td>MXCD07</td><td>MXCD09</td><td class="number">24</td></tr>
+          <tr><td>MXYU01</td><td>MXCD09</td><td class="number">21</td></tr>
+          <tr><td>MXNL01</td><td>MXCD11</td><td class="number">6</td></tr>
+          <tr><td>MXGT01</td><td>MXCD11</td><td class="number">5</td></tr>
+          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">4</td></tr>
+          <tr><td>MXCD12</td><td>MXCD09</td><td class="number">4</td></tr>
+          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">4</td></tr>
+          <tr><td>MXYU01</td><td>MXCD11</td><td class="number">4</td></tr>
+          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">3</td></tr>
+          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">3</td></tr>
+          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">3</td></tr>
+          <tr><td>MXCD10</td><td>MXCD11</td><td class="number">2</td></tr>
+          <tr><td>MXCD05</td><td>MXCD09</td><td class="number">2</td></tr>
+          <tr><td>MXCD14</td><td>MXCD11</td><td class="number">1</td></tr>
+          <tr><td>MXCD02</td><td>MXCD11</td><td class="number">1</td></tr>
+          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">1</td></tr>
+          <tr><td>MXSO01</td><td>MXCD09</td><td class="number">1</td></tr>
+</tbody>
+      </table>
+    </div>
+
+    <h2>Parte 2 – Estratégico</h2>
+    <p class="note">Indicadores que prometimos mejorar o no empeorar: reducción de XDs en tramos; más adelante costo, lead time, promesa.</p>
+
+    <div class="section-estrategico">
+      <h3>2.1 Reducción estimada de cantidad de XDs en los tramos</h3>
+      <p>Desde vista datos+rutas: <strong>cantidad_XDs</strong> = (operational_steps_count − 2). <span class="promedio-line">Línea de promedio cuando haya gráfico.</span></p>
+      <div class="kpi">
+        <div class="kpi-card"><div class="value">1.7</div><div class="label">Promedio XDs por envío</div></div>
+        <div class="kpi-card"><div class="value">11857</div><div class="label">Envíos con ruta</div></div>
+      </div>
+      <table id="tabla-xds">
+        <thead><tr><th>Ruta (inicio → fin)</th><th class="number">XD (promedio)</th><th class="number">Envíos</th></tr></thead>
+        <tbody>          <tr><td>MXXGD1 &gt; MXJC01</td><td class="number">0.0</td><td class="number">632</td></tr>
+          <tr><td>SBJ1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">544</td></tr>
+          <tr><td>SHM1 &gt; MXXHM1 &gt; MXXCU1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">363</td></tr>
+          <tr><td>SGD1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">1.0</td><td class="number">337</td></tr>
+          <tr><td>MXXMT1 &gt; MXNL01</td><td class="number">0.0</td><td class="number">276</td></tr>
+          <tr><td>SPV1 &gt; MXXPV1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">253</td></tr>
+          <tr><td>MXXEM3 &gt; MXCD09</td><td class="number">0.0</td><td class="number">235</td></tr>
+          <tr><td>SMT3 &gt; MXXMT1 &gt; MXNL01</td><td class="number">1.0</td><td class="number">231</td></tr>
+          <tr><td>SML1 &gt; MXXML1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">230</td></tr>
+          <tr><td>SSL1 &gt; MXXSL1 &gt; MXXEM2 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">229</td></tr>
+          <tr><td>SZC1 &gt; MXXZC1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">223</td></tr>
+          <tr><td>MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">1.0</td><td class="number">216</td></tr>
+          <tr><td>SMT2 &gt; MXXMT1 &gt; MXNL01</td><td class="number">1.0</td><td class="number">207</td></tr>
+          <tr><td>SGD3 &gt; MXXGD1 &gt; MXJC01</td><td class="number">1.0</td><td class="number">193</td></tr>
+          <tr><td>MXXEM2 &gt; MXCD09</td><td class="number">0.0</td><td class="number">180</td></tr>
+          <tr><td>SMT1 &gt; MXXMT1 &gt; MXNL01</td><td class="number">1.0</td><td class="number">175</td></tr>
+          <tr><td>SCY1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">174</td></tr>
+          <tr><td>SLE1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">169</td></tr>
+          <tr><td>SXL1 &gt; MXXCU1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">168</td></tr>
+          <tr><td>STA1 &gt; MXXTA1 &gt; MXXMT1 &gt; MXNL01</td><td class="number">2.0</td><td class="number">164</td></tr>
+</tbody>
+      </table>
+
+      <h3>2.2 Indicadores no incluidos aún</h3>
+      <p class="note">Costo, lead time, promesa — siguiente iteración cuando haya fuente y definición.</p>
+    </div>
 
     <div class="footer">
-      Reporte generado a partir de Centralizacion_Datos. Centralización EnoE MLM.
+      Reporte generado desde BigQuery. Centralización EnoE MLM. Actualizado por GitHub Actions.<br>
+      <strong>Ver reporte:</strong> <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/estefanianari-hue/AI-Reverse-Logistics/main/reporte_centralizacion_eneo.html" target="_blank" rel="noopener">htmlpreview (AI-Reverse-Logistics)</a>
     </div>
   </div>
   <script>
-    // Opcional: abrir en ventana actual si se usa file://
-    console.log('Reporte Centralización EnoE cargado');
+    document.getElementById('btn-aplicar').addEventListener('click', function() { alert('Los datos se actualizan desde el script de BigQuery. Los filtros se aplicarán en la próxima iteración.'); });
+    document.getElementById('btn-csv').addEventListener('click', function() { alert('Exportar CSV en la próxima iteración.'); });
   </script>
 </body>
 </html>
