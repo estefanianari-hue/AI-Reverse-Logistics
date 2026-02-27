@@ -56,7 +56,7 @@
   <div class="container">
     <h1>Centralización EnoE (MLM) – Dashboard</h1>
     <p><strong>Fuente:</strong> meli-sbox.SBOXSHPBIPRODUCTO.Centralizacion_Datos_cursor + Centralizacion_Rutas_cursor (vista datos+rutas)</p>
-    <p><strong>Última actualización:</strong> 27/02/2026 11:32</p>
+    <p><strong>Última actualización:</strong> 27/02/2026 11:50</p>
     <div id="filtros-error" style="display:none; padding:12px; background:#fee; border:1px solid #c00; border-radius:4px; margin-bottom:16px; font-size:0.9rem;"></div>
 
     <h2>Filtros</h2>
@@ -73,7 +73,7 @@
     <p class="note" style="margin-top:0;">Los datos están incluidos en este archivo. Abrí el reporte con doble clic en el HTML.</p>
 
     <h2>Resumen general</h2>
-    <div class="kpi">
+    <div class="kpi" id="kpi-resumen">
       <div class="kpi-card"><div class="value">16586</div><div class="label">Total envíos (después + válido)</div></div>
       <div class="kpi-card ok"><div class="value">3960</div><div class="label">Sí siguió la regla</div></div>
       <div class="kpi-card alert"><div class="value">12487</div><div class="label">No siguió la regla</div></div>
@@ -87,7 +87,7 @@
     <div class="section-seguimiento">
       <h3>1.1 Casos que no cumplen la regla del autorizador</h3>
       <p>Envíos donde <strong>WH generado ≠ WH planeado</strong>. Solo con status_ativacao = &quot;después&quot; y CDU_valido = &quot;VALIDO&quot;.</p>
-      <div class="kpi">
+      <div class="kpi" id="kpi-seguimiento">
         <div class="kpi-card alert"><div class="value">12487</div><div class="label">No siguió la regla</div></div>
         <div class="kpi-card ok"><div class="value">3960</div><div class="label">Sí siguió la regla</div></div>
       </div>
@@ -797,7 +797,7 @@
     <div class="section-estrategico">
       <h3>2.1 Reducción estimada de cantidad de XDs en los tramos</h3>
       <p>Desde vista datos+rutas: <strong>cantidad_XDs</strong> = (operational_steps_count − 2). <span class="promedio-line">Línea de promedio cuando haya gráfico.</span></p>
-      <div class="kpi">
+      <div class="kpi" id="kpi-estrategico">
         <div class="kpi-card"><div class="value">1.7</div><div class="label">Promedio XDs por envío</div></div>
         <div class="kpi-card"><div class="value">16544</div><div class="label">Envíos con ruta</div></div>
       </div>
@@ -832,7 +832,7 @@
 
     <div class="footer">
       Reporte generado desde BigQuery. Centralización EnoE MLM.<br>
-      <strong>Última actualización:</strong> 27/02/2026 11:32 — <strong>Ver reporte:</strong> <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/estefanianari-hue/AI-Reverse-Logistics/main/reporte_centralizacion_eneo.html" target="_blank" rel="noopener">htmlpreview (AI-Reverse-Logistics)</a>
+      <strong>Última actualización:</strong> 27/02/2026 11:50 — <strong>Ver reporte:</strong> <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/estefanianari-hue/AI-Reverse-Logistics/main/reporte_centralizacion_eneo.html" target="_blank" rel="noopener">htmlpreview (AI-Reverse-Logistics)</a>
     </div>
   </div>
   <script>
@@ -922,8 +922,10 @@
       return;
     }
     var D = datosCargados;
-    var desde = document.getElementById("periodo-desde").value;
-    var hasta = document.getElementById("periodo-hasta").value;
+    var desdeEl = document.getElementById("periodo-desde");
+    var hastaEl = document.getElementById("periodo-hasta");
+    var desde = desdeEl ? desdeEl.value : "";
+    var hasta = hastaEl ? hastaEl.value : "";
     if (!desde || !hasta) {
       alert("Seleccioná período desde y hasta.");
       return;
@@ -939,6 +941,10 @@
     var tFilt = t.filter(function(r) { return r.fecha >= desde && r.fecha <= hasta; });
     var xFilt = x.filter(function(r) { return r.fecha >= desde && r.fecha <= hasta; });
     try {
+    function setTbody(id, html) {
+      var el = document.getElementById(id);
+      if (el) { var tb = el.querySelector("tbody"); if (tb) tb.innerHTML = html; }
+    }
     function sum(arr, field) { return arr.reduce(function(a, r) { return a + (r[field] || 0); }, 0); }
     var total = sum(cFilt, "cantidad");
     var nao = cFilt.filter(function(r) { return r.classificacao_regra_WH === "Nao seguiu regra"; }).reduce(function(a, r) { return a + r.cantidad; }, 0);
@@ -953,14 +959,14 @@
       rutasMap[ruta].count += 1;
     });
     var promXds = xFilt.length ? (xFilt.reduce(function(a, r) { return a + (r.cantidad_XDs || 0); }, 0) / xFilt.length) : 0;
-    var kpiMain = document.querySelector(".container .kpi");
+    var kpiMain = document.getElementById("kpi-resumen");
     var vals = kpiMain ? kpiMain.querySelectorAll(".kpi-card .value") : [];
     if (vals[0]) vals[0].innerHTML = total;
     if (vals[1]) vals[1].innerHTML = seguiu;
     if (vals[2]) vals[2].innerHTML = nao;
     if (vals[3]) vals[3].innerHTML = pct + "%";
     if (vals[4]) vals[4].innerHTML = triageTotal;
-    var kpiSeg = document.querySelector(".section-seguimiento .kpi");
+    var kpiSeg = document.getElementById("kpi-seguimiento");
     if (kpiSeg) {
       var vs = kpiSeg.querySelectorAll(".kpi-card .value");
       if (vs[0]) vs[0].innerHTML = nao;
@@ -976,7 +982,7 @@
       var v = reglaAgg[k];
       return "<tr><td>" + esc(traducir(v.regla)) + "</td><td>" + esc(traducir(v.trocou)) + "</td><td class=\"number\">" + v.cantidad + "</td></tr>";
     }).join("");
-    document.getElementById("tabla-regla").querySelector("tbody").innerHTML = tr1 || "<tr><td colspan=\"3\" class=\"empty-state\">Sin datos en el período</td></tr>";
+    setTbody("tabla-regla", tr1 || "<tr><td colspan=\"3\" class=\"empty-state\">Sin datos en el período</td></tr>");
     var flagsAgg = {};
     fFilt.forEach(function(r) {
       var fl = r.flag_identificada || "";
@@ -986,7 +992,7 @@
     var tr2 = Object.keys(flagsAgg).sort(function(a, b) { return flagsAgg[b] - flagsAgg[a]; }).map(function(fl) {
       return "<tr><td>" + esc(traducir(fl)) + "</td><td class=\"number\">" + flagsAgg[fl] + "</td></tr>";
     }).join("");
-    document.getElementById("tabla-tags-error").querySelector("tbody").innerHTML = tr2 || "<tr><td colspan=\"2\" class=\"empty-state\">Sin datos</td></tr>";
+    setTbody("tabla-tags-error", tr2 || "<tr><td colspan=\"2\" class=\"empty-state\">Sin datos</td></tr>");
     var destAgg = {};
     dFilt.forEach(function(r) {
       var key = (r.destino_recibe || "") + "|" + (r.destino_deberia || "");
@@ -997,7 +1003,7 @@
       var v = destAgg[k];
       return "<tr><td>" + esc(traducir(String(v.recibe))) + "</td><td>" + esc(traducir(String(v.deberia))) + "</td><td class=\"number\">" + v.n + "</td></tr>";
     }).join("");
-    document.getElementById("tabla-destinos-incorrectos").querySelector("tbody").innerHTML = tr3 || "<tr><td colspan=\"3\" class=\"empty-state\">Sin datos</td></tr>";
+    setTbody("tabla-destinos-incorrectos", tr3 || "<tr><td colspan=\"3\" class=\"empty-state\">Sin datos</td></tr>");
     var triageAgg = {};
     tFilt.forEach(function(r) {
       var key = (r.SHP_GRADE || "") + "|" + (r.SHP_RESOLUTION || "") + "|" + (r.WH_triage || "");
@@ -1008,15 +1014,15 @@
       var v = triageAgg[k];
       return "<tr><td>" + esc(traducir(v.g)) + "</td><td>" + esc(traducir(v.res)) + "</td><td>" + esc(traducir(v.wh)) + "</td><td class=\"number\">" + v.n + "</td></tr>";
     }).join("");
-    document.getElementById("tabla-triage").querySelector("tbody").innerHTML = tr4 || "<tr><td colspan=\"4\" class=\"empty-state\">Sin datos</td></tr>";
-    document.getElementById("tabla-error-destino").querySelector("tbody").innerHTML = tr1;
+    setTbody("tabla-triage", tr4 || "<tr><td colspan=\"4\" class=\"empty-state\">Sin datos</td></tr>");
+    setTbody("tabla-error-destino", tr1);
     var tr5Rows = Object.keys(rutasMap).sort(function(a, b) { return rutasMap[b].count - rutasMap[a].count; }).slice(0, 20).map(function(ruta) {
       var v = rutasMap[ruta];
       var prom = v.count ? Math.round(v.sum / v.count * 10) / 10 : 0;
       return "<tr><td>" + esc(ruta) + "</td><td class=\"number\">" + prom + "</td><td class=\"number\">" + v.count + "</td></tr>";
     });
-    document.getElementById("tabla-xds").querySelector("tbody").innerHTML = tr5Rows.length ? tr5Rows.join("") : "<tr><td colspan=\"3\" class=\"empty-state\">Sin datos</td></tr>";
-    var kpiEst = document.querySelector(".section-estrategico .kpi");
+    setTbody("tabla-xds", tr5Rows.length ? tr5Rows.join("") : "<tr><td colspan=\"3\" class=\"empty-state\">Sin datos</td></tr>");
+    var kpiEst = document.getElementById("kpi-estrategico");
     if (kpiEst) {
       var ve = kpiEst.querySelectorAll(".kpi-card .value");
       if (ve[0]) ve[0].innerHTML = Math.round(promXds * 10) / 10;
@@ -1036,17 +1042,20 @@
       var max = todas.reduce(function(a, b) { return a > b ? a : b; });
       var desdeEl = document.getElementById("periodo-desde");
       var hastaEl = document.getElementById("periodo-hasta");
-      if (!desdeEl.value) desdeEl.value = min;
-      if (!hastaEl.value) hastaEl.value = max;
+      if (desdeEl && !desdeEl.value) desdeEl.value = min;
+      if (hastaEl && !hastaEl.value) hastaEl.value = max;
     }
     aplicar();
   }
   window.aplicarFiltros = aplicar;
-  document.getElementById("btn-aplicar").addEventListener("click", aplicar);
-  document.getElementById("btn-csv").addEventListener("click", function() { alert("Exportar CSV en la próxima iteración."); });
+  var btnAplicar = document.getElementById("btn-aplicar");
+  if (btnAplicar) btnAplicar.addEventListener("click", aplicar);
+  var btnCsv = document.getElementById("btn-csv");
+  if (btnCsv) btnCsv.addEventListener("click", function() { alert("Exportar CSV en la próxima iteración."); });
   if (datosCargados) {
     ocultarErrorFiltros();
-    if (document.readyState === "complete") initFechas(); else window.addEventListener("load", initFechas);
+    if (document.readyState === "complete") { try { initFechas(); } catch (e) { console.error("initFechas:", e); } }
+    else window.addEventListener("load", function() { try { initFechas(); } catch (e) { console.error("initFechas:", e); } });
   } else {
     mostrarErrorFiltros("No se cargaron los datos del reporte. Regenerá el reporte (python scripts/generar_reporte_bq.py).");
   };
