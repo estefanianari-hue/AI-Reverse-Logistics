@@ -56,7 +56,7 @@
   <div class="container">
     <h1>Centralización EnoE (MLM) – Dashboard</h1>
     <p><strong>Fuente:</strong> meli-sbox.SBOXSHPBIPRODUCTO.Centralizacion_Datos_cursor + Centralizacion_Rutas_cursor (vista datos+rutas)</p>
-    <p><strong>Última actualización:</strong> 04/03/2026 13:34</p>
+    <p><strong>Última actualización:</strong> 04/03/2026 13:42</p>
     <div id="filtros-error" style="display:none; padding:12px; background:#fee; border:1px solid #c00; border-radius:4px; margin-bottom:16px; font-size:0.9rem;"></div>
 
     <h2>Filtros</h2>
@@ -832,7 +832,7 @@
 
     <div class="footer">
       Reporte generado desde BigQuery. Centralización EnoE MLM.<br>
-      <strong>Última actualización:</strong> 04/03/2026 13:34 — <strong>Ver reporte:</strong> <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/estefanianari-hue/AI-Reverse-Logistics/main/reporte_centralizacion_eneo.html" target="_blank" rel="noopener">htmlpreview (AI-Reverse-Logistics)</a>
+      <strong>Última actualización:</strong> 04/03/2026 13:42 — <strong>Ver reporte:</strong> <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/estefanianari-hue/AI-Reverse-Logistics/main/reporte_centralizacion_eneo.html" target="_blank" rel="noopener">htmlpreview (AI-Reverse-Logistics)</a>
     </div>
   </div>
   <script src="reporte_datos.js"></script>
@@ -848,7 +848,7 @@
   }
   function iniciar() {
     var D = window.REPORTE_DATOS || null;
-    if (!D) { mostrarError("No se cargó reporte_datos.js. Dejalo en la misma carpeta que este HTML."); return; }
+    if (!D) { mostrarError("No se cargó reporte_datos.js. Dejalo en la misma carpeta que este HTML. Si ya está: abrí el HTML con doble clic desde ESA carpeta en el Explorador. Si sigue fallando, en la terminal: cd para_github && python -m http.server 8080 y abrí http://localhost:8080/reporte_centralizacion_eneo.html"); return; }
     var TRADUCIR = {
     "Seguiu regra": "Sí siguió la regla",
     "Nao seguiu regra": "No siguió la regla",
