@@ -50,26 +50,31 @@
     .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #eee; font-size: 0.8rem; color: #999; }
     .promedio-line { font-style: italic; color: #666; font-size: 0.85rem; }
     .empty-state { color: #999; font-style: italic; padding: 16px; text-align: center; }
+    .filtro-pronto { background: #e8ecf0; color: #5c6370; border-radius: 6px; padding: 6px 10px; border-left: 3px solid #9ca3af; }
+    .filtro-pronto label { color: #5c6370; }
+    .filtro-pronto select { background: #f0f2f5; color: #6b7280; }
+    .leyenda-filtros { font-size: 0.85rem; color: #555; margin-top: 10px; margin-bottom: 0; padding: 8px 12px; background: #f8f9fa; border-radius: 4px; border-left: 3px solid #3483fa; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Centralización EnoE (MLM) – Dashboard</h1>
     <p><strong>Fuente:</strong> meli-sbox.SBOXSHPBIPRODUCTO.Centralizacion_Datos_cursor + Centralizacion_Rutas_cursor (vista datos+rutas)</p>
-    <p><strong>Última actualización:</strong> 04/03/2026 13:42</p>
+    <p><strong>Última actualización:</strong> 04/03/2026 15:30</p>
     <div id="filtros-error" style="display:none; padding:12px; background:#fee; border:1px solid #c00; border-radius:4px; margin-bottom:16px; font-size:0.9rem;"></div>
 
     <h2>Filtros</h2>
     <div class="filtros">
-      <div><label for="site">Sitio</label><select id="site"><option value="MLM" selected>MLM</option></select></div>
-      <div><label for="fc">FC / WH</label><select id="fc"><option value="">Todos</option></select></div>
       <div><label for="periodo-desde">Período desde</label><input type="date" id="periodo-desde" value="2026-01-01"></div>
       <div><label for="periodo-hasta">hasta</label><input type="date" id="periodo-hasta" value="2026-03-04"></div>
-      <div><label for="dimension">Dimensión</label><select id="dimension"><option value="day">Día</option><option value="week">Semana</option><option value="month" selected>Mes</option></select></div>
-      <div><label for="orden">Ordenar por</label><select id="orden"><option value="cantidad">Cantidad</option><option value="fecha">Fecha</option></select></div>
+      <div class="filtro-pronto" title="Se habilitará con más historial de datos"><label for="site">Sitio</label><select id="site"><option value="MLM" selected>MLM</option></select></div>
+      <div class="filtro-pronto" title="Se habilitará con más historial de datos"><label for="fc">FC / WH</label><select id="fc"><option value="">Todos</option></select></div>
+      <div class="filtro-pronto" title="Se habilitará con más historial de datos"><label for="dimension">Dimensión</label><select id="dimension"><option value="day">Día</option><option value="week">Semana</option><option value="month" selected>Mes</option></select></div>
+      <div class="filtro-pronto" title="Se habilitará con más historial de datos"><label for="orden">Ordenar por</label><select id="orden"><option value="cantidad">Cantidad</option><option value="fecha">Fecha</option></select></div>
       <button type="button" class="btn" id="btn-aplicar" title="Aplicar filtro de período">Aplicar</button>
       <button type="button" class="btn" id="btn-csv" style="background:#00a650;">Descargar CSV</button>
     </div>
+    <p class="leyenda-filtros"><strong>Filtro activo:</strong> Período (desde / hasta). Sitio, FC, Dimensión y Ordenar por se habilitarán cuando haya más historial de datos.</p>
     <p class="note" style="margin-top:0;">Los datos se cargan desde <strong>reporte_datos.js</strong> (misma carpeta que este HTML). Abrí el reporte con doble clic y dejá el .js junto al HTML.</p>
 
     <h2>Resumen general</h2>
@@ -832,7 +837,7 @@
 
     <div class="footer">
       Reporte generado desde BigQuery. Centralización EnoE MLM.<br>
-      <strong>Última actualización:</strong> 04/03/2026 13:42 — <strong>Ver reporte:</strong> <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/estefanianari-hue/AI-Reverse-Logistics/main/reporte_centralizacion_eneo.html" target="_blank" rel="noopener">htmlpreview (AI-Reverse-Logistics)</a>
+      <strong>Última actualización:</strong> 04/03/2026 15:30 — <strong>Ver reporte:</strong> <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/estefanianari-hue/AI-Reverse-Logistics/main/reporte_centralizacion_eneo.html" target="_blank" rel="noopener">htmlpreview (AI-Reverse-Logistics)</a>
     </div>
   </div>
   <script src="reporte_datos.js"></script>
