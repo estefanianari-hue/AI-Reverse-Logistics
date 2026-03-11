@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Informe Triage Pilas/Baterías — Desde 01/12/2025</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root { --ml-yellow: #ffe600; --ml-blue: #3483fa; --ml-dark: #333; --ml-gray: #666; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #fff; color: var(--ml-dark); }
+    h1 { font-size: 1.5rem; color: var(--ml-dark); border-bottom: 2px solid var(--ml-yellow); padding-bottom: 8px; }
+    h2 { font-size: 1.15rem; color: var(--ml-blue); margin-top: 28px; }
+    .kpis { display: flex; flex-wrap: wrap; gap: 16px; margin: 20px 0; }
+    .kpi { background: #f7f7f7; border-radius: 8px; padding: 16px 20px; min-width: 140px; }
+    .kpi .valor { font-size: 1.75rem; font-weight: 700; color: var(--ml-blue); }
+    .kpi .label { font-size: 0.85rem; color: var(--ml-gray); margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.9rem; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f7f7f7; font-weight: 600; color: var(--ml-dark); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .chart-container { max-width: 800px; height: 280px; margin: 20px 0; }
+    .meta { font-size: 0.8rem; color: var(--ml-gray); margin-top: 24px; }
+    section { margin-bottom: 32px; }
+    .btn-csv { background: var(--ml-blue); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; margin-bottom: 12px; }
+    .btn-csv:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <h1>Informe: Productos en triage que requirieron pila/batería</h1>
+  <p class="meta">Período: desde el 1° de diciembre de 2025 hasta la fecha. Fuente: triage ENEs + Devos (query completa).</p>
+
+  <section>
+    <h2>1. Resumen general</h2>
+    <div class="kpis">
+      <div class="kpi">
+        <div class="valor">821,635</div>
+        <div class="label">Total productos (requieren pila/batería)</div>
+      </div>
+      <div class="kpi">
+        <div class="valor">205,409</div>
+        <div class="label">Promedio mensual (4 meses)</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Por tipo de flujo (ENE vs Devo)</h2>
+    <div class="kpis">
+      <div class="kpi">
+        <div class="valor">132,553</div>
+        <div class="label">ENE — 16.1%</div>
+      </div>
+      <div class="kpi">
+        <div class="valor">689,082</div>
+        <div class="label">Devo — 83.9%</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. Histórico mensual y promedio</h2>
+    <p>Total por mes (fecha triage) y línea de promedio mensual.</p>
+    <button type="button" id="btnExportCsv" class="btn-csv">Descargar histórico (CSV)</button>
+    <div class="chart-container">
+      <canvas id="chartHist"></canvas>
+    </div>
+    <table>
+      <thead><tr><th>Mes</th><th class="num">Cantidad</th></tr></thead>
+      <tbody><tr><td>2025-12</td><td class="num">245,228</td></tr><tr><td>2026-01</td><td class="num">282,807</td></tr><tr><td>2026-02</td><td class="num">218,361</td></tr><tr><td>2026-03</td><td class="num">75,239</td></tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>4. Detalle por site</h2>
+    <table>
+      <thead><tr><th>Site</th><th class="num">Cantidad</th><th class="num">%</th></tr></thead>
+      <tbody><tr><td>MLB</td><td class="num">434,987</td><td class="num">52.9%</td></tr><tr><td>MLM</td><td class="num">305,512</td><td class="num">37.2%</td></tr><tr><td>MLA</td><td class="num">53,271</td><td class="num">6.5%</td></tr><tr><td>MLC</td><td class="num">19,399</td><td class="num">2.4%</td></tr><tr><td>MCO</td><td class="num">8,425</td><td class="num">1.0%</td></tr><tr><td>MPE</td><td class="num">41</td><td class="num">0.0%</td></tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>5. Detalle por centro (facility)</h2>
+    <table>
+      <thead><tr><th>Centro (SHP_FACILITY_ID)</th><th class="num">Cantidad</th><th class="num">%</th></tr></thead>
+      <tbody><tr><td>BRSP02</td><td class="num">245,920</td><td class="num">29.9%</td></tr><tr><td>MXCD09</td><td class="num">193,975</td><td class="num">23.6%</td></tr><tr><td>ARBA01</td><td class="num">52,463</td><td class="num">6.4%</td></tr><tr><td>BRMG01</td><td class="num">48,614</td><td class="num">5.9%</td></tr><tr><td>MXCD02</td><td class="num">29,945</td><td class="num">3.6%</td></tr><tr><td>BRSP04</td><td class="num">24,529</td><td class="num">3.0%</td></tr><tr><td>CLRM03</td><td class="num">19,140</td><td class="num">2.3%</td></tr><tr><td>MXNL01</td><td class="num">17,271</td><td class="num">2.1%</td></tr><tr><td>MXJC01</td><td class="num">16,750</td><td class="num">2.0%</td></tr><tr><td>BRPR01</td><td class="num">15,796</td><td class="num">1.9%</td></tr><tr><td>BRSC02</td><td class="num">15,016</td><td class="num">1.8%</td></tr><tr><td>BRBA01</td><td class="num">13,013</td><td class="num">1.6%</td></tr><tr><td>MXCD10</td><td class="num">12,397</td><td class="num">1.5%</td></tr><tr><td>MXGT01</td><td class="num">12,236</td><td class="num">1.5%</td></tr><tr><td>BRMG02</td><td class="num">12,195</td><td class="num">1.5%</td></tr><tr><td>BRRJ02</td><td class="num">9,066</td><td class="num">1.1%</td></tr><tr><td>COCU02</td><td class="num">8,425</td><td class="num">1.0%</td></tr><tr><td>BRPE01</td><td class="num">7,088</td><td class="num">0.9%</td></tr><tr><td>MXYU01</td><td class="num">5,995</td><td class="num">0.7%</td></tr><tr><td>BRSP14</td><td class="num">5,967</td><td class="num">0.7%</td></tr><tr><td>BRSP19</td><td class="num">5,677</td><td class="num">0.7%</td></tr><tr><td>MXCD06</td><td class="num">5,104</td><td class="num">0.6%</td></tr><tr><td>BRBA02</td><td class="num">4,758</td><td class="num">0.6%</td></tr><tr><td>BRSP18</td><td class="num">4,029</td><td class="num">0.5%</td></tr><tr><td>MXCD05</td><td class="num">4,022</td><td class="num">0.5%</td></tr><tr><td>BRSP06</td><td class="num">3,916</td><td class="num">0.5%</td></tr><tr><td>BRSP25</td><td class="num">3,803</td><td class="num">0.5%</td></tr><tr><td>BRSP11</td><td class="num">3,735</td><td class="num">0.5%</td></tr><tr><td>BRSP10</td><td class="num">3,546</td><td class="num">0.4%</td></tr><tr><td>BRSP15</td><td class="num">3,234</td><td class="num">0.4%</td></tr><tr><td>MXCD11</td><td class="num">2,277</td><td class="num">0.3%</td></tr><tr><td>MXCD07</td><td class="num">2,277</td><td class="num">0.3%</td></tr><tr><td>BRMG03</td><td class="num">2,164</td><td class="num">0.3%</td></tr><tr><td>MXCD12</td><td class="num">2,121</td><td class="num">0.3%</td></tr><tr><td>BRDF01</td><td class="num">1,146</td><td class="num">0.1%</td></tr><tr><td>BRSP24</td><td class="num">863</td><td class="num">0.1%</td></tr><tr><td>ARBA04</td><td class="num">767</td><td class="num">0.1%</td></tr><tr><td>BRMG04</td><td class="num">575</td><td class="num">0.1%</td></tr><tr><td>MXSO01</td><td class="num">544</td><td class="num">0.1%</td></tr><tr><td>MXCD08</td><td class="num">533</td><td class="num">0.1%</td></tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>6. Top ítems (más frecuentes en triage)</h2>
+    <p class="meta">Nota: algunos ítems aparecen como &quot;requieren pila/batería&quot; por un falso positivo: la query usa atributos cuyo nombre contiene &quot;pila&quot; o &quot;bater&quot;; la palabra &quot;capilar&quot; (p. ej. aceites capilares) contiene &quot;pila&quot; y por eso queda marcada. Es una limitación conocida de la lógica actual.</p>
+    <table>
+      <thead><tr><th>ITE_ITEM_ID</th><th>Título (resumen)</th><th class="num">Cantidad</th></tr></thead>
+      <tbody><tr><td>5654427126</td><td title="Fone De Ouvido Para Capacete Bluetooth Headset Rgb Sem Fio Kateluo">Fone De Ouvido Para Capacete Bluetooth Headset Rgb…</td><td class="num">1,884</td></tr><tr><td>4268042659</td><td title="Parafusadeira Furadeira De Impacto The Black Tools Profissional Tb-21px 2 Bateri">Parafusadeira Furadeira De Impacto The Black Tools…</td><td class="num">1,865</td></tr><tr><td>4198447289</td><td title="Power Bank 20.000mah Haixia Carregador Rápido Com Display Po Branco">Power Bank 20.000mah Haixia Carregador Rápido Com …</td><td class="num">1,747</td></tr><tr><td>5539942492</td><td title="Fone De Ouvido Bluetooth Sem Fio Tws Bateria De Longa Duração E Conexão Ultra Rá">Fone De Ouvido Bluetooth Sem Fio Tws Bateria De Lo…</td><td class="num">1,286</td></tr><tr><td>5605902294</td><td title="Fone De Ouvido Bluetooth Sem Fio Com Visor Intra Auricular Estéreo Graves Potent">Fone De Ouvido Bluetooth Sem Fio Com Visor Intra A…</td><td class="num">1,259</td></tr><tr><td>3975530813</td><td title="Moto G15 Dual Sim 4gb Ram 128gb Azul Marino Azul-escuro">Moto G15 Dual Sim 4gb Ram 128gb Azul Marino Azul-e…</td><td class="num">1,190</td></tr><tr><td>3975698675</td><td title="Smartphone Motorola Moto G15 - 128gb 12gb (4gb Ram+8gb Ram Boost) E Camera 50mp ">Smartphone Motorola Moto G15 - 128gb 12gb (4gb Ram…</td><td class="num">1,145</td></tr><tr><td>3658803458</td><td title="Aspirador De Pó Vertical E Portátil Wap High Speed Plus 1350w 3 Em 1 Cinza/verme">Aspirador De Pó Vertical E Portátil Wap High Speed…</td><td class="num">1,054</td></tr><tr><td>3621404839</td><td title="Lavadora Lava Jato Portátil Pressão 2 Baterias + Maleta Preto 127/220v 50 Hz X 6">Lavadora Lava Jato Portátil Pressão 2 Baterias + M…</td><td class="num">1,004</td></tr><tr><td>3371578831</td><td title="Parafusadeira Furadeira The Black Tools Tb12a 3/8 A Bateria Cor Amarelo Frequênc">Parafusadeira Furadeira The Black Tools Tb12a 3/8 …</td><td class="num">945</td></tr><tr><td>2305625685</td><td title="Hidrolavadora Inalámbrica Electrica Hirlan Yn01 Pistola Para Lavado Autos Portat">Hidrolavadora Inalámbrica Electrica Hirlan Yn01 Pi…</td><td class="num">890</td></tr><tr><td>5579126912</td><td title="Aspirador De Pó Mini Soprador 3em1 Usb 1 Refil Portátil Recarregável Marca Rhyde">Aspirador De Pó Mini Soprador 3em1 Usb 1 Refil Por…</td><td class="num">861</td></tr><tr><td>5409764772</td><td title="Smartphone Motorola Moto G35 5g - 128gb 12gb (4gb Ram+8gb Ram Boost) E Camera 50">Smartphone Motorola Moto G35 5g - 128gb 12gb (4gb …</td><td class="num">830</td></tr><tr><td>3771505959</td><td title="Parafusadeira E Furadeira Impacto The Black Tools Tb-21pw 3/8 Cor Amarelo Frequê">Parafusadeira E Furadeira Impacto The Black Tools …</td><td class="num">803</td></tr><tr><td>5905412428</td><td title="Massageador Pistola Elétrica Profissional Muscular Portátil Aparelho Fisioterapi">Massageador Pistola Elétrica Profissional Muscular…</td><td class="num">799</td></tr><tr><td>5313884566</td><td title="Celular Samsung Galaxy A16 128gb 4gb Ram Câmera 50mp Tela 6.7 Nfc Preto">Celular Samsung Galaxy A16 128gb 4gb Ram Câmera 50…</td><td class="num">785</td></tr><tr><td>4230850359</td><td title="Smartphone Motorola Moto G05 - 128gb 12gb (4gb Ram + 8gb Ram Boost) E Camera 50m">Smartphone Motorola Moto G05 - 128gb 12gb (4gb Ram…</td><td class="num">778</td></tr><tr><td>4894385214</td><td title="Maquina Maquininha De Cortar Cabelo Barbeador Eletrico Aparador De Pelos Acabame">Maquina Maquininha De Cortar Cabelo Barbeador Elet…</td><td class="num">763</td></tr><tr><td>4122634907</td><td title="Barbeador E Cortador De Cabelo 3 Em 1 Kemei Km-6558 Preto 127/220v">Barbeador E Cortador De Cabelo 3 Em 1 Kemei Km-655…</td><td class="num">739</td></tr><tr><td>5389815488</td><td title="Balança Digital De Vidro Good Deals Oficial Até 180kg Portatil Corporal Transpar">Balança Digital De Vidro Good Deals Oficial Até 18…</td><td class="num">730</td></tr><tr><td>4070125455</td><td title="Parafusadeira Furadeira C/ 2 Baterias Maleta Kit Completo Led Eixo Flexível Vári">Parafusadeira Furadeira C/ 2 Baterias Maleta Kit C…</td><td class="num">726</td></tr><tr><td>4228627923</td><td title="Smartphone Motorola Moto G06 - 128gb 12gb (4gb Ram + 8gb Ram Boost) E Camera 50m">Smartphone Motorola Moto G06 - 128gb 12gb (4gb Ram…</td><td class="num">716</td></tr><tr><td>5824624692</td><td title="Fone Bluetooth Compatível Com Ios, Android, Samsung E iPhone Cor Branco B Basto">Fone Bluetooth Compatível Com Ios, Android, Samsun…</td><td class="num">716</td></tr><tr><td>2631867798</td><td title="Aspirador De Pó E Água Wap Gtw 10 Compacto 1400w 10 Litros Amarelo/preto 127v">Aspirador De Pó E Água Wap Gtw 10 Compacto 1400w 1…</td><td class="num">714</td></tr><tr><td>3546959017</td><td title="Aparador E Raspador Oneblade Com 2 Pentes, À Prova Dágua, Bivolt  Qp1424/10 Phil">Aparador E Raspador Oneblade Com 2 Pentes, À Prova…</td><td class="num">714</td></tr><tr><td>5237338738</td><td title="Smartphone Motorola Moto G15 - 256gb 12gb (4gb Ram+8gb Ram Boost) E Camera 50mp ">Smartphone Motorola Moto G15 - 256gb 12gb (4gb Ram…</td><td class="num">675</td></tr><tr><td>5859349564</td><td title="Celular Samsung Galaxy A07 128gb, 4gb, Câmera 50mp, Tela 6.7 , Proteção Ip54, Pr">Celular Samsung Galaxy A07 128gb, 4gb, Câmera 50mp…</td><td class="num">658</td></tr><tr><td>3964141405</td><td title="Tablet Vaio Tl10 8gb 128gb Octa-core, Tela 10.4 2k, 4g Wifi, Câmera 8mp + Selfie">Tablet Vaio Tl10 8gb 128gb Octa-core, Tela 10.4 2k…</td><td class="num">653</td></tr><tr><td>3969638313</td><td title="Tablet Positivo Vision Tab 7 - Processador Octa-core 3gb Ram 64gb Armazenamento,">Tablet Positivo Vision Tab 7 - Processador Octa-co…</td><td class="num">653</td></tr><tr><td>4154911487</td><td title="Mini Localizador Rastreador Smart Tag Gps Cor Preto Compatível Com iPhone Apple ">Mini Localizador Rastreador Smart Tag Gps Cor Pret…</td><td class="num">652</td></tr><tr><td>5314078142</td><td title="Celular Samsung Galaxy A16 128gb 4gb Ram Câmera De Até 50mp Tela 6.7 Nfc Ip54 Ba">Celular Samsung Galaxy A16 128gb 4gb Ram Câmera De…</td><td class="num">641</td></tr><tr><td>6402348992</td><td title="Aspirador De Pó Vertical 3 Em 1 High Speed Plus 1350w Wap Cor Cinza 220v">Aspirador De Pó Vertical 3 Em 1 High Speed Plus 13…</td><td class="num">631</td></tr><tr><td>4083251613</td><td title="Balança Digital De Precisão 10kg Davely Cook Cozinha Para Uso Domestico E Profis">Balança Digital De Precisão 10kg Davely Cook Cozin…</td><td class="num">629</td></tr><tr><td>5540327490</td><td title="Microfone Lapela Sem Fio Tipo C Mymotors Para Android iPhone Cancelamento Ruído ">Microfone Lapela Sem Fio Tipo C Mymotors Para Andr…</td><td class="num">628</td></tr><tr><td>4090753237</td><td title="Fone De Ouvido Sem Fio Tws Bluetooth 5.1 Cancelamento Cvc Chamadas Hd Modo Jogo ">Fone De Ouvido Sem Fio Tws Bluetooth 5.1 Cancelame…</td><td class="num">618</td></tr><tr><td>2226305939</td><td title="Point Smart 2, Terminal Para Tarjetas Con Internet Gratis">Point Smart 2, Terminal Para Tarjetas Con Internet…</td><td class="num">618</td></tr><tr><td>4390600407</td><td title="Power Bank 20.000mah Connect Carregador Rápido Com Display Portátil Universal Pr">Power Bank 20.000mah Connect Carregador Rápido Com…</td><td class="num">609</td></tr><tr><td>4009588155</td><td title="Lanterna Militar Tatica Led Cree Mais Forte Do Mundo Ultra Potente 1km Zoom Alto">Lanterna Militar Tatica Led Cree Mais Forte Do Mun…</td><td class="num">595</td></tr><tr><td>5980069984</td><td title="Robô Aspirador Robot W90 Varre Aspira E Passa Pano 30w Wap Cor Preto 127/220v">Robô Aspirador Robot W90 Varre Aspira E Passa Pano…</td><td class="num">587</td></tr><tr><td>5779531722</td><td title="Balança Digital Eletrônica Comercial 40kg Precisão Mercado Azul Hold On. 127/220">Balança Digital Eletrônica Comercial 40kg Precisão…</td><td class="num">581</td></tr><tr><td>5120546360</td><td title="Apple iPhone 16 (128 Gb) - Preto - Distribuidor Autorizado">Apple iPhone 16 (128 Gb) - Preto - Distribuidor Au…</td><td class="num">580</td></tr><tr><td>4270494135</td><td title="Power Bank 10000mah Carregador Portátil Turbo Rápido Universal Celular - Marca F">Power Bank 10000mah Carregador Portátil Turbo Rápi…</td><td class="num">558</td></tr><tr><td>4268443283</td><td title="Carregador Power Bank Indução Sem Fio 5000mah Battery Marca Bahrein Pack Compatí">Carregador Power Bank Indução Sem Fio 5000mah Batt…</td><td class="num">551</td></tr><tr><td>5671007980</td><td title="Power Bank 20.000mah Carregador Portátil Maxnova Carga Rápida Premium Com Displa">Power Bank 20.000mah Carregador Portátil Maxnova C…</td><td class="num">548</td></tr><tr><td>5983719810</td><td title="Smartphone Motorola Moto G05 - 128gb 12gb (4gb Ram + 8gb Ram Boost) E Camera 50m">Smartphone Motorola Moto G05 - 128gb 12gb (4gb Ram…</td><td class="num">547</td></tr><tr><td>3904300435</td><td title="Smartphone Motorola Moto G35 5g - 256gb 12gb (4gb Ram+8gb Ram Boost) E Camera 50">Smartphone Motorola Moto G35 5g - 256gb 12gb (4gb …</td><td class="num">541</td></tr><tr><td>3472542034</td><td title="Lápiz Óptico Stylus Pluma Para iPad, Carga Rápida Magnético">Lápiz Óptico Stylus Pluma Para iPad, Carga Rápida …</td><td class="num">533</td></tr><tr><td>4203777919</td><td title="Balança Digital Bioimpedância Bluetooth Inteligente Corporal Alta Precisão Com A">Balança Digital Bioimpedância Bluetooth Inteligent…</td><td class="num">531</td></tr><tr><td>4188936547</td><td title="Furadeira E Parafusadeira De Impacto 2 Baterias 2000mah 21v 3/8 Tb-21pkx The Bla">Furadeira E Parafusadeira De Impacto 2 Baterias 20…</td><td class="num">529</td></tr><tr><td>3934657461</td><td title="Kit De Teclado E Mouse Sem Fio Logitech Mk235 Teclado Grafite E Mouse Preto">Kit De Teclado E Mouse Sem Fio Logitech Mk235 Tecl…</td><td class="num">527</td></tr></tbody>
+    </table>
+  </section>
+
+  <p class="meta">Informe generado a partir de DB_Triage_pilas_bat.csv. Logística Inversa — Triage pilas/baterías.</p>
+
+  <script>
+    const ctx = document.getElementById('chartHist').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ["2025-12", "2026-01", "2026-02", "2026-03"],
+        datasets: [
+          { label: 'Cantidad por mes', data: [245228, 282807, 218361, 75239], backgroundColor: 'rgba(52, 131, 250, 0.7)' },
+          { label: 'Promedio mensual', data: [205409, 205409, 205409, 205409], type: 'line', borderColor: '#ffe600', borderWidth: 2, fill: false, pointRadius: 0 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: true } }
+      }
+    });
+    document.getElementById('btnExportCsv').onclick = function () {
+      const rows = [
+        ['Mes', 'Cantidad'],
+        ...[["2025-12", 245228], ["2026-01", 282807], ["2026-02", 218361], ["2026-03", 75239]]
+      ];
+      const csv = rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'historico_triage_pilas_baterias.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+  </script>
+</body>
+</html>
