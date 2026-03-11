@@ -61,14 +61,21 @@
   <section>
     <h2>3. Histórico mensual y promedio</h2>
     <p>Total por mes (fecha triage) y línea de promedio mensual.</p>
-    <button type="button" id="btnExportCsv" class="btn-csv">Descargar histórico (CSV)</button>
-    <div class="chart-container">
-      <canvas id="chartHist"></canvas>
+    <div class="kpis">
+      <div class="kpi">
+        <div class="valor">205,409</div>
+        <div class="label">Promedio mensual</div>
+      </div>
     </div>
+    <p><strong>Total por mes:</strong></p>
     <table>
       <thead><tr><th>Mes</th><th class="num">Cantidad</th></tr></thead>
       <tbody><tr><td>2025-12</td><td class="num">245,228</td></tr><tr><td>2026-01</td><td class="num">282,807</td></tr><tr><td>2026-02</td><td class="num">218,361</td></tr><tr><td>2026-03</td><td class="num">75,239</td></tr></tbody>
     </table>
+    <button type="button" id="btnExportCsv" class="btn-csv">Descargar histórico (CSV)</button>
+    <div class="chart-container">
+      <canvas id="chartHist"></canvas>
+    </div>
   </section>
 
   <section>
