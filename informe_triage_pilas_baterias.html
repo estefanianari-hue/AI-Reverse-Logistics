@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Informe Triage Pilas/Baterías — Desde 01/12/2025</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root { --ml-yellow: #ffe600; --ml-blue: #3483fa; --ml-dark: #333; --ml-gray: #666; }
     * { box-sizing: border-box; }
@@ -19,7 +18,6 @@
     th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
     th { background: #f7f7f7; font-weight: 600; color: var(--ml-dark); }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
-    .chart-container { max-width: 800px; height: 280px; margin: 20px 0; }
     .bar-chart { max-width: 560px; margin: 16px 0; }
     .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; }
     .bar-label { width: 72px; flex-shrink: 0; }
@@ -83,9 +81,6 @@
     <p><strong>Gráfico (visible en todos los navegadores):</strong></p>
     <div class="bar-chart"><div class="bar-row"><span class="bar-label">2025-12</span><div class="bar-wrap"><div class="bar-fill" style="width:86.7%"></div></div><span class="bar-num">245,228</span></div><div class="bar-row"><span class="bar-label">2026-01</span><div class="bar-wrap"><div class="bar-fill" style="width:100.0%"></div></div><span class="bar-num">282,807</span></div><div class="bar-row"><span class="bar-label">2026-02</span><div class="bar-wrap"><div class="bar-fill" style="width:77.2%"></div></div><span class="bar-num">218,361</span></div><div class="bar-row"><span class="bar-label">2026-03</span><div class="bar-wrap"><div class="bar-fill" style="width:26.6%"></div></div><span class="bar-num">75,239</span></div><div class="bar-row avg-row"><span class="bar-label">Promedio</span><div class="bar-wrap"><div class="bar-fill" style="width:72.6%"></div></div><span class="bar-num">205,409</span></div></div>
     <button type="button" id="btnExportCsv" class="btn-csv">Descargar histórico (CSV)</button>
-    <div class="chart-container">
-      <canvas id="chartHist"></canvas>
-    </div>
   </section>
 
   <section>
@@ -116,23 +111,6 @@
   <p class="meta">Informe generado a partir de DB_Triage_pilas_bat.csv. Logística Inversa — Triage pilas/baterías.</p>
 
   <script>
-    const ctx = document.getElementById('chartHist').getContext('2d');
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ["2025-12", "2026-01", "2026-02", "2026-03"],
-        datasets: [
-          { label: 'Cantidad por mes', data: [245228, 282807, 218361, 75239], backgroundColor: 'rgba(52, 131, 250, 0.7)' },
-          { label: 'Promedio mensual', data: [205409, 205409, 205409, 205409], type: 'line', borderColor: '#ffe600', borderWidth: 2, fill: false, pointRadius: 0 }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true } },
-        plugins: { legend: { display: true } }
-      }
-    });
     document.getElementById('btnExportCsv').onclick = function () {
       const rows = [
         ['Mes', 'Cantidad'],
