@@ -49,7 +49,6 @@
     .btn { display: inline-block; padding: 10px 20px; background: #3483fa; color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.9rem; text-decoration: none; }
     .btn:hover { background: #2968c6; color: #fff; }
     .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #eee; font-size: 0.8rem; color: #999; }
-    .promedio-line { font-style: italic; color: #666; font-size: 0.85rem; }
     .empty-state { color: #999; font-style: italic; padding: 16px; text-align: center; }
     .filtro-pronto { background: #e8ecf0; color: #5c6370; border-radius: 6px; padding: 6px 10px; border-left: 3px solid #9ca3af; }
     .filtro-pronto label { color: #5c6370; }
@@ -59,13 +58,19 @@
     .cards-group { flex: 1; min-width: 280px; }
     .cards-group-title { font-size: 0.95rem; color: #3483fa; margin-bottom: 8px; font-weight: 600; }
     .kpi-card .pct { font-size: 1.25rem; font-weight: 400; color: #666; margin-top: 0; margin-left: 0.2em; display: inline; }
+    .kpi-card.kpi-card-sm { padding: 10px 14px; min-width: 110px; }
+    .kpi-card.kpi-card-sm .value { font-size: 1rem; }
+    .kpi-card.kpi-card-sm .value .pct { font-size: 1rem; }
+    .kpi-card.kpi-card-sm .label { font-size: 0.8rem; }
+    .kpi-triage-grades { gap: 10px; margin-top: 12px; }
+    .triage-legend { font-size: 0.8rem; color: #666; margin-top: 10px; margin-bottom: 0; padding: 8px 0; border-top: 1px solid #eee; }
     tr.total-row { background: #e8ecf0; font-weight: 600; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Centralización EnoE (MLM)</h1>
-    <p><strong>Última actualización:</strong> 12/03/2026 14:42</p>
+    <p><strong>Última actualización:</strong> 12/03/2026 15:37</p>
     <div id="filtros-error" style="display:none; padding:12px; background:#fee; border:1px solid #c00; border-radius:4px; margin-bottom:16px; font-size:0.9rem;"></div>
 
     <h2>Filtros</h2>
@@ -79,7 +84,6 @@
       <button type="button" class="btn" id="btn-csv" style="background:#00a650;">Descargar CSV</button>
     </div>
     <p class="leyenda-filtros"><strong>Filtro activo:</strong> Período (desde / hasta). Sitio, FC y Dimensión se habilitarán cuando haya más historial de datos.</p>
-    <p class="note" style="margin-top:0;">Los datos se cargan desde <strong>reporte_datos.js</strong> (misma carpeta que este HTML). Abrí el reporte con doble clic y dejá el .js junto al HTML.</p>
 
     <h2>Resumen general</h2>
     <div class="kpi" id="kpi-resumen">
@@ -127,63 +131,69 @@
       <p>Cantidad de envíos que ya tienen <strong>triage</strong> y distribución por <strong>Grado</strong>, <strong>Resolución</strong>, <strong>WH triage</strong>.</p>
       <div class="kpi" id="kpi-triage">
         <div class="kpi-card"><div class="value">31957 <span class="pct">(71.1%)</span></div><div class="label">Envíos con triage</div></div>
-        <div class="kpi-card"><div class="value">5</div><div class="label">Grados (resumen sin WH)</div></div>
-        <div class="kpi-card"><div class="value">5</div><div class="label">Resoluciones (resumen sin WH)</div></div>
+        <div class="kpi kpi-triage-grades" id="kpi-triage-grades"><div class="kpi-card kpi-card-sm"><div class="value">30760 <span class="pct">(96.3%)</span></div><div class="label">A (Vendible)</div></div><div class="kpi-card kpi-card-sm"><div class="value">649 <span class="pct">(2.0%)</span></div><div class="label">E (No vendible)</div></div><div class="kpi-card kpi-card-sm"><div class="value">289 <span class="pct">(0.9%)</span></div><div class="label">Sin grado</div></div><div class="kpi-card kpi-card-sm"><div class="value">181 <span class="pct">(0.6%)</span></div><div class="label">C (No vendible)</div></div><div class="kpi-card kpi-card-sm"><div class="value">71 <span class="pct">(0.2%)</span></div><div class="label">B (No vendible)</div></div><div class="kpi-card kpi-card-sm"><div class="value">7 <span class="pct">(0.0%)</span></div><div class="label">E (Vendible)</div></div></div>
+        <p class="triage-legend" id="triage-legend">* En «Sin grado» se incluyen las resoluciones: Descartado, FOUND, Perdido.</p>
       </div>
       <table id="tabla-triage">
         <thead><tr><th>WH triage</th><th>Grado</th><th>Resolución</th><th class="number">Cantidad</th><th class="number">%</th></tr></thead>
-        <tbody>          <tr><td>MXJC01</td><td>A</td><td>Vendible</td><td class="number">10133</td><td class="number">31.7%</td></tr>
-          <tr><td>MXCD09</td><td>A</td><td>Vendible</td><td class="number">9127</td><td class="number">28.6%</td></tr>
-          <tr><td>MXCD11</td><td>A</td><td>Vendible</td><td class="number">4890</td><td class="number">15.3%</td></tr>
-          <tr><td>MXNL01</td><td>A</td><td>Vendible</td><td class="number">4059</td><td class="number">12.7%</td></tr>
-          <tr><td>MXCD06</td><td>A</td><td>Vendible</td><td class="number">1604</td><td class="number">5.0%</td></tr>
-          <tr><td>MXCD09</td><td>E</td><td>No vendible</td><td class="number">284</td><td class="number">0.9%</td></tr>
-          <tr><td>MXCD02</td><td>A</td><td>Vendible</td><td class="number">275</td><td class="number">0.9%</td></tr>
-          <tr><td>MXGT01</td><td>A</td><td>Vendible</td><td class="number">217</td><td class="number">0.7%</td></tr>
-          <tr><td>MXCD11</td><td>E</td><td>No vendible</td><td class="number">207</td><td class="number">0.6%</td></tr>
-          <tr><td>MXCD14</td><td>A</td><td>Vendible</td><td class="number">175</td><td class="number">0.5%</td></tr>
-          <tr><td>MXCD10</td><td>A</td><td>Vendible</td><td class="number">139</td><td class="number">0.4%</td></tr>
-          <tr><td>MXCD11</td><td>C</td><td>No vendible</td><td class="number">134</td><td class="number">0.4%</td></tr>
-          <tr><td>MXCD06</td><td>E</td><td>No vendible</td><td class="number">63</td><td class="number">0.2%</td></tr>
-          <tr><td>MXCD09</td><td>B</td><td>No vendible</td><td class="number">59</td><td class="number">0.2%</td></tr>
-          <tr><td>MXJC01</td><td>E</td><td>No vendible</td><td class="number">57</td><td class="number">0.2%</td></tr>
-          <tr><td>MXJC01</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">57</td><td class="number">0.2%</td></tr>
-          <tr><td>MXCD05</td><td>A</td><td>Vendible</td><td class="number">50</td><td class="number">0.2%</td></tr>
-          <tr><td>MXCD09</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">44</td><td class="number">0.1%</td></tr>
-          <tr><td>MXCD12</td><td>A</td><td>Vendible</td><td class="number">41</td><td class="number">0.1%</td></tr>
-          <tr><td>MXCD09</td><td>(Sin Grado)</td><td>Perdido</td><td class="number">41</td><td class="number">0.1%</td></tr>
-          <tr><td>MXJC01</td><td>(Sin Grado)</td><td>Perdido</td><td class="number">34</td><td class="number">0.1%</td></tr>
-          <tr><td>MXCD06</td><td>C</td><td>No vendible</td><td class="number">30</td><td class="number">0.1%</td></tr>
-          <tr><td>MXCD07</td><td>A</td><td>Vendible</td><td class="number">27</td><td class="number">0.1%</td></tr>
-          <tr><td>MXCD06</td><td>(Sin Grado)</td><td>Perdido</td><td class="number">26</td><td class="number">0.1%</td></tr>
-          <tr><td>MXNL01</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">26</td><td class="number">0.1%</td></tr>
-          <tr><td>MXYU01</td><td>A</td><td>Vendible</td><td class="number">21</td><td class="number">0.1%</td></tr>
-          <tr><td>MXCD11</td><td>(Sin Grado)</td><td>Perdido</td><td class="number">19</td><td class="number">0.1%</td></tr>
-          <tr><td>MXCD11</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">16</td><td class="number">0.1%</td></tr>
-          <tr><td>MXNL01</td><td>E</td><td>No vendible</td><td class="number">13</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD14</td><td>E</td><td>No vendible</td><td class="number">12</td><td class="number">0.0%</td></tr>
-          <tr><td>MXNL01</td><td>(Sin Grado)</td><td>Perdido</td><td class="number">8</td><td class="number">0.0%</td></tr>
-          <tr><td>MXJC01</td><td>C</td><td>No vendible</td><td class="number">8</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD06</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">7</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD11</td><td>B</td><td>No vendible</td><td class="number">7</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD02</td><td>E</td><td>No vendible</td><td class="number">6</td><td class="number">0.0%</td></tr>
-          <tr><td>MXNL01</td><td>C</td><td>No vendible</td><td class="number">6</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD12</td><td>E</td><td>No vendible</td><td class="number">5</td><td class="number">0.0%</td></tr>
-          <tr><td>MXJC01</td><td>(Sin Grado)</td><td>FOUND</td><td class="number">5</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD09</td><td>E</td><td>Vendible</td><td class="number">4</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD14</td><td>B</td><td>No vendible</td><td class="number">4</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD09</td><td>C</td><td>No vendible</td><td class="number">3</td><td class="number">0.0%</td></tr>
-          <tr><td>MXSO01</td><td>A</td><td>Vendible</td><td class="number">2</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD02</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">2</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD11</td><td>E</td><td>Vendible</td><td class="number">2</td><td class="number">0.0%</td></tr>
-          <tr><td>MXGT01</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">1</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD05</td><td>E</td><td>No vendible</td><td class="number">1</td><td class="number">0.0%</td></tr>
-          <tr><td>MXJC01</td><td>E</td><td>Vendible</td><td class="number">1</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD14</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">1</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD02</td><td>B</td><td>No vendible</td><td class="number">1</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD07</td><td>E</td><td>No vendible</td><td class="number">1</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD09</td><td>(Sin Grado)</td><td>FOUND</td><td class="number">1</td><td class="number">0.0%</td></tr>
-          <tr><td>MXCD14</td><td>(Sin Grado)</td><td>Perdido</td><td class="number">1</td><td class="number">0.0%</td></tr>
+        <tbody>          <tr><td>MXJC01</td><td>A</td><td>Vendible</td><td class="number">10133</td><td class="number">98.4%</td></tr>
+          <tr><td></td><td>Sin grado</td><td>Ver asterisco</td><td class="number">96</td><td class="number">0.9%</td></tr>
+          <tr><td></td><td>E</td><td>No vendible</td><td class="number">57</td><td class="number">0.6%</td></tr>
+          <tr><td></td><td>C</td><td>No vendible</td><td class="number">8</td><td class="number">0.1%</td></tr>
+          <tr><td></td><td>E</td><td>Vendible</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>10295</strong></td><td class="number"><strong>32.2%</strong></td></tr>
+          <tr><td>MXCD09</td><td>A</td><td>Vendible</td><td class="number">9127</td><td class="number">95.4%</td></tr>
+          <tr><td></td><td>E</td><td>No vendible</td><td class="number">284</td><td class="number">3.0%</td></tr>
+          <tr><td></td><td>Sin grado</td><td>Ver asterisco</td><td class="number">86</td><td class="number">0.9%</td></tr>
+          <tr><td></td><td>B</td><td>No vendible</td><td class="number">59</td><td class="number">0.6%</td></tr>
+          <tr><td></td><td>E</td><td>Vendible</td><td class="number">4</td><td class="number">0.0%</td></tr>
+          <tr><td></td><td>C</td><td>No vendible</td><td class="number">3</td><td class="number">0.0%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>9563</strong></td><td class="number"><strong>29.9%</strong></td></tr>
+          <tr><td>MXCD11</td><td>A</td><td>Vendible</td><td class="number">4890</td><td class="number">92.7%</td></tr>
+          <tr><td></td><td>E</td><td>No vendible</td><td class="number">207</td><td class="number">3.9%</td></tr>
+          <tr><td></td><td>C</td><td>No vendible</td><td class="number">134</td><td class="number">2.5%</td></tr>
+          <tr><td></td><td>Sin grado</td><td>Ver asterisco</td><td class="number">35</td><td class="number">0.7%</td></tr>
+          <tr><td></td><td>B</td><td>No vendible</td><td class="number">7</td><td class="number">0.1%</td></tr>
+          <tr><td></td><td>E</td><td>Vendible</td><td class="number">2</td><td class="number">0.0%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>5275</strong></td><td class="number"><strong>16.5%</strong></td></tr>
+          <tr><td>MXNL01</td><td>A</td><td>Vendible</td><td class="number">4059</td><td class="number">98.7%</td></tr>
+          <tr><td></td><td>Sin grado</td><td>Ver asterisco</td><td class="number">34</td><td class="number">0.8%</td></tr>
+          <tr><td></td><td>E</td><td>No vendible</td><td class="number">13</td><td class="number">0.3%</td></tr>
+          <tr><td></td><td>C</td><td>No vendible</td><td class="number">6</td><td class="number">0.1%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>4112</strong></td><td class="number"><strong>12.9%</strong></td></tr>
+          <tr><td>MXCD06</td><td>A</td><td>Vendible</td><td class="number">1604</td><td class="number">92.7%</td></tr>
+          <tr><td></td><td>E</td><td>No vendible</td><td class="number">63</td><td class="number">3.6%</td></tr>
+          <tr><td></td><td>Sin grado</td><td>Ver asterisco</td><td class="number">33</td><td class="number">1.9%</td></tr>
+          <tr><td></td><td>C</td><td>No vendible</td><td class="number">30</td><td class="number">1.7%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>1730</strong></td><td class="number"><strong>5.4%</strong></td></tr>
+          <tr><td>MXCD02</td><td>A</td><td>Vendible</td><td class="number">275</td><td class="number">96.8%</td></tr>
+          <tr><td></td><td>E</td><td>No vendible</td><td class="number">6</td><td class="number">2.1%</td></tr>
+          <tr><td></td><td>Sin grado</td><td>Ver asterisco</td><td class="number">2</td><td class="number">0.7%</td></tr>
+          <tr><td></td><td>B</td><td>No vendible</td><td class="number">1</td><td class="number">0.4%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>284</strong></td><td class="number"><strong>0.9%</strong></td></tr>
+          <tr><td>MXGT01</td><td>A</td><td>Vendible</td><td class="number">217</td><td class="number">99.5%</td></tr>
+          <tr><td></td><td>Sin grado</td><td>Ver asterisco</td><td class="number">1</td><td class="number">0.5%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>218</strong></td><td class="number"><strong>0.7%</strong></td></tr>
+          <tr><td>MXCD14</td><td>A</td><td>Vendible</td><td class="number">175</td><td class="number">90.7%</td></tr>
+          <tr><td></td><td>E</td><td>No vendible</td><td class="number">12</td><td class="number">6.2%</td></tr>
+          <tr><td></td><td>B</td><td>No vendible</td><td class="number">4</td><td class="number">2.1%</td></tr>
+          <tr><td></td><td>Sin grado</td><td>Ver asterisco</td><td class="number">2</td><td class="number">1.0%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>193</strong></td><td class="number"><strong>0.6%</strong></td></tr>
+          <tr><td>MXCD10</td><td>A</td><td>Vendible</td><td class="number">139</td><td class="number">100.0%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>139</strong></td><td class="number"><strong>0.4%</strong></td></tr>
+          <tr><td>MXCD05</td><td>A</td><td>Vendible</td><td class="number">50</td><td class="number">98.0%</td></tr>
+          <tr><td></td><td>E</td><td>No vendible</td><td class="number">1</td><td class="number">2.0%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>51</strong></td><td class="number"><strong>0.2%</strong></td></tr>
+          <tr><td>MXCD12</td><td>A</td><td>Vendible</td><td class="number">41</td><td class="number">89.1%</td></tr>
+          <tr><td></td><td>E</td><td>No vendible</td><td class="number">5</td><td class="number">10.9%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>46</strong></td><td class="number"><strong>0.1%</strong></td></tr>
+          <tr><td>MXCD07</td><td>A</td><td>Vendible</td><td class="number">27</td><td class="number">96.4%</td></tr>
+          <tr><td></td><td>E</td><td>No vendible</td><td class="number">1</td><td class="number">3.6%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>28</strong></td><td class="number"><strong>0.1%</strong></td></tr>
+          <tr><td>MXYU01</td><td>A</td><td>Vendible</td><td class="number">21</td><td class="number">100.0%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>21</strong></td><td class="number"><strong>0.1%</strong></td></tr>
+          <tr><td>MXSO01</td><td>A</td><td>Vendible</td><td class="number">2</td><td class="number">100.0%</td></tr>
+          <tr class="total-row"><td></td><td><strong>Total</strong></td><td>—</td><td class="number"><strong>2</strong></td><td class="number"><strong>0.0%</strong></td></tr>
           <tr class="total-row"><td><strong>Total</strong></td><td>—</td><td>—</td><td class="number"><strong>31957</strong></td><td class="number"><strong>100%</strong></td></tr>
 </tbody>
       </table>
@@ -265,36 +275,35 @@
 
     <div class="section-estrategico">
       <h3>2.1 Reducción estimada de cantidad de XDs en los tramos</h3>
-      <p>Desde vista datos+rutas: <strong>cantidad_XDs</strong> = (operational_steps_count − 2). <span class="promedio-line">Línea de promedio cuando haya gráfico.</span></p>
       <div class="kpi" id="kpi-estrategico">
         <div class="kpi-card"><div class="value">1.4</div><div class="label">Promedio XDs por envío</div></div>
-        <div class="kpi-card"><div class="value">44947 <span class="pct">(100.0%)</span></div><div class="label">Envíos con ruta</div></div>
+        <div class="kpi-card"><div class="value">44947 <span class="pct">(99.99%)</span></div><div class="label">Envíos con ruta</div></div>
       </div>
       <table id="tabla-xds">
         <thead><tr><th>Ruta (inicio → fin)</th><th class="number">XD (promedio)</th><th class="number">Envíos</th><th class="number">%</th></tr></thead>
-        <tbody>          <tr><td>MXXEM2 &gt; MXCD09</td><td class="number">0.0</td><td class="number">4173</td><td class="number">22.2%</td></tr>
-          <tr><td>MXXEM3 &gt; MXCD09</td><td class="number">0.0</td><td class="number">1857</td><td class="number">9.9%</td></tr>
-          <tr><td>MXXGD1 &gt; MXJC01</td><td class="number">0.0</td><td class="number">1737</td><td class="number">9.3%</td></tr>
-          <tr><td>MXXEM2 &gt; MXCD11</td><td class="number">0.0</td><td class="number">975</td><td class="number">5.2%</td></tr>
-          <tr><td>SGD1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">1.0</td><td class="number">951</td><td class="number">5.1%</td></tr>
-          <tr><td>SBJ1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">849</td><td class="number">4.5%</td></tr>
-          <tr><td>SCQ1 &gt; MXXCQ1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">831</td><td class="number">4.4%</td></tr>
-          <tr><td>MXXMT1 &gt; MXNL01</td><td class="number">0.0</td><td class="number">805</td><td class="number">4.3%</td></tr>
-          <tr><td>SML1 &gt; MXXML1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">755</td><td class="number">4.0%</td></tr>
-          <tr><td>SHM1 &gt; MXXHM1 &gt; MXXCU1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">654</td><td class="number">3.5%</td></tr>
-          <tr><td>SPV1 &gt; MXXPV1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">595</td><td class="number">3.2%</td></tr>
-          <tr><td>SMT2 &gt; MXXMT1 &gt; MXNL01</td><td class="number">1.0</td><td class="number">582</td><td class="number">3.1%</td></tr>
-          <tr><td>STA1 &gt; MXXTA1 &gt; MXXMT1 &gt; MXNL01</td><td class="number">2.0</td><td class="number">558</td><td class="number">3.0%</td></tr>
-          <tr><td>SSL1 &gt; MXXSL1 &gt; MXXEM2 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">507</td><td class="number">2.7%</td></tr>
-          <tr><td>SMT1 &gt; MXXMT1 &gt; MXNL01</td><td class="number">1.0</td><td class="number">505</td><td class="number">2.7%</td></tr>
-          <tr><td>SMX9 &gt; MXXEM2 &gt; MXCD09</td><td class="number">1.0</td><td class="number">499</td><td class="number">2.7%</td></tr>
-          <tr><td>SGD2 &gt; MXXGD1 &gt; MXJC01</td><td class="number">1.0</td><td class="number">494</td><td class="number">2.6%</td></tr>
-          <tr><td>SMX5 &gt; MXXEM2 &gt; MXCD09</td><td class="number">1.0</td><td class="number">490</td><td class="number">2.6%</td></tr>
-          <tr><td>SZC1 &gt; MXXZC1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">477</td><td class="number">2.5%</td></tr>
-          <tr><td>SLE1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">473</td><td class="number">2.5%</td></tr>
-          <tr class="total-row"><td><strong>Total</strong></td><td>—</td><td class="number"><strong>18767</strong></td><td class="number"><strong>100%</strong></td></tr>
+        <tbody>          <tr><td>MXXEM2 &gt; MXCD09</td><td class="number">0.0</td><td class="number">4173</td><td class="number">9.3%</td></tr>
+          <tr><td>MXXEM3 &gt; MXCD09</td><td class="number">0.0</td><td class="number">1857</td><td class="number">4.1%</td></tr>
+          <tr><td>MXXGD1 &gt; MXJC01</td><td class="number">0.0</td><td class="number">1737</td><td class="number">3.9%</td></tr>
+          <tr><td>MXXEM2 &gt; MXCD11</td><td class="number">0.0</td><td class="number">975</td><td class="number">2.2%</td></tr>
+          <tr><td>SGD1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">1.0</td><td class="number">951</td><td class="number">2.1%</td></tr>
+          <tr><td>SBJ1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">849</td><td class="number">1.9%</td></tr>
+          <tr><td>SCQ1 &gt; MXXCQ1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">831</td><td class="number">1.8%</td></tr>
+          <tr><td>MXXMT1 &gt; MXNL01</td><td class="number">0.0</td><td class="number">805</td><td class="number">1.8%</td></tr>
+          <tr><td>SML1 &gt; MXXML1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">755</td><td class="number">1.7%</td></tr>
+          <tr><td>SHM1 &gt; MXXHM1 &gt; MXXCU1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">654</td><td class="number">1.5%</td></tr>
+          <tr><td>SPV1 &gt; MXXPV1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">595</td><td class="number">1.3%</td></tr>
+          <tr><td>SMT2 &gt; MXXMT1 &gt; MXNL01</td><td class="number">1.0</td><td class="number">582</td><td class="number">1.3%</td></tr>
+          <tr><td>STA1 &gt; MXXTA1 &gt; MXXMT1 &gt; MXNL01</td><td class="number">2.0</td><td class="number">558</td><td class="number">1.2%</td></tr>
+          <tr><td>SSL1 &gt; MXXSL1 &gt; MXXEM2 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">507</td><td class="number">1.1%</td></tr>
+          <tr><td>SMT1 &gt; MXXMT1 &gt; MXNL01</td><td class="number">1.0</td><td class="number">505</td><td class="number">1.1%</td></tr>
+          <tr><td>SMX9 &gt; MXXEM2 &gt; MXCD09</td><td class="number">1.0</td><td class="number">499</td><td class="number">1.1%</td></tr>
+          <tr><td>SGD2 &gt; MXXGD1 &gt; MXJC01</td><td class="number">1.0</td><td class="number">494</td><td class="number">1.1%</td></tr>
+          <tr><td>SMX5 &gt; MXXEM2 &gt; MXCD09</td><td class="number">1.0</td><td class="number">490</td><td class="number">1.1%</td></tr>
+          <tr><td>SZC1 &gt; MXXZC1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">477</td><td class="number">1.1%</td></tr>
+          <tr><td>SLE1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">473</td><td class="number">1.1%</td></tr>
 </tbody>
       </table>
+      <p class="note tabla-xds-leyenda">Solo se muestran las 20 rutas con más envíos; el resto no aparece en el tablero. Los % son sobre el total de envíos con ruta.</p>
 
       <h3>2.2 Indicadores no incluidos aún</h3>
       <p class="note">Costos, lead time, promesa — siguiente iteración cuando haya fuente y definición.</p>
@@ -304,7 +313,7 @@
       <strong>Fuentes de datos y lógicas principales</strong><br>
       meli-sbox.SBOXSHPBIPRODUCTO.Centralizacion_Datos_cursor + Centralizacion_Rutas_cursor (vista datos+rutas). Filtro base: status_ativacao = &quot;después&quot;, CDU_valido = &quot;VALIDO&quot;; clasificación regla/trocou según query_centralizacion_datos.sql.<br><br>
       Reporte generado desde BigQuery. Centralización EnoE MLM.<br>
-      <strong>Última actualización:</strong> 12/03/2026 14:42 — <strong>Ver reporte:</strong> <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/estefanianari-hue/AI-Reverse-Logistics/main/reporte_centralizacion_eneo.html" target="_blank" rel="noopener">htmlpreview (AI-Reverse-Logistics)</a>
+      <strong>Última actualización:</strong> 12/03/2026 15:37 — <strong>Ver reporte:</strong> <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/estefanianari-hue/AI-Reverse-Logistics/main/reporte_centralizacion_eneo.html" target="_blank" rel="noopener">htmlpreview (AI-Reverse-Logistics)</a>
     </div>
   </div>
   <script src="reporte_datos.js"></script>
@@ -338,6 +347,16 @@
     "OK": "OK"
   };
   function traducir(s) { return s == null ? "" : (TRADUCIR[s] || s); }
+  function normalizarGradoResolucion(g, res) {
+    var gg = (g || "").trim(), rr = (res || "").trim();
+    var gU = gg.toUpperCase(), rU = rr.toUpperCase();
+    var gEsGrado = /^[ABCE]$/.test(gU) || gg === "" || gg.toLowerCase() === "(sin grade)" || gg.toLowerCase() === "(sin grado)";
+    var rEsResol = /^(SALEABLE|UNSALEABLE|OK|DISCARD|LOST|FOUND)$/.test(rU) || rr.toLowerCase() === "(sin resolution)" || rr.toLowerCase() === "(sin resolución)" || ["Vendible","No vendible","Descartado","Perdido"].indexOf(rr) >= 0;
+    var gEsResol = /^(SALEABLE|UNSALEABLE|OK|DISCARD|LOST|FOUND)$/.test(gU) || ["Vendible","No vendible","Descartado","Perdido"].indexOf(gg) >= 0;
+    var rEsGrado = /^[ABCE]$/.test(rU);
+    if (gEsResol && rEsGrado) { return { grado: rr, resolucion: gg }; }
+    return { grado: gg || "(sin grado)", resolucion: rr || "(sin resolución)" };
+  }
   function esc(s) {
     var d = document.createElement('div');
     d.textContent = s;
@@ -489,51 +508,116 @@
     var tr3 = tr3Rows.join("");
     setTbody("tabla-destinos-incorrectos", tr3 || "<tr><td colspan=\"4\" class=\"empty-state\">Sin datos</td></tr>");
     var pctTriage = total ? Math.round(100 * triageTotal / total * 10) / 10 : 0;
-    var gradesSet = {};
-    var resSet = {};
-    tFilt.forEach(function(r) { if (r.SHP_GRADE) gradesSet[r.SHP_GRADE] = true; if (r.SHP_RESOLUTION) resSet[r.SHP_RESOLUTION] = true; });
-    var gradesDistinct = Object.keys(gradesSet).length;
-    var resolutionsDistinct = Object.keys(resSet).length;
+    function mayuscGrado(s) { if (!s) return ""; return String(s).replace(/\b\w/g, function(c) { return c.toUpperCase(); }); }
+    function esSinGrado(g) { var s = (g || "").trim().toLowerCase(); return s === "" || s === "(sin grado)" || s === "(sin grade)"; }
+    var gradeAgg = {};
+    tFilt.forEach(function(r) {
+      var norm = normalizarGradoResolucion(r.SHP_GRADE, r.SHP_RESOLUTION);
+      var g = norm.grado;
+      var res = norm.resolucion;
+      var key = g + "|" + res;
+      if (!gradeAgg[key]) gradeAgg[key] = { n: 0, g: g, res: res };
+      gradeAgg[key].n += r.cantidad;
+    });
+    var totalTriageForPct = triageTotal || 1;
+    var totalSinGrado = 0;
+    var gradeEntries = [];
+    Object.keys(gradeAgg).forEach(function(k) {
+      var v = gradeAgg[k];
+      if (esSinGrado(v.g)) { totalSinGrado += v.n; return; }
+      gradeEntries.push({ label: mayuscGrado(traducir(v.g)) + " (" + traducir(v.res) + ")", n: v.n });
+    });
+    if (totalSinGrado > 0) gradeEntries.push({ label: "Sin grado", n: totalSinGrado });
+    gradeEntries.sort(function(a, b) { return b.n - a.n; });
+    var gradeCardsHtml = gradeEntries.map(function(e) {
+      var pctG = totalTriageForPct ? Math.round(100 * e.n / totalTriageForPct * 10) / 10 : 0;
+      return '<div class="kpi-card kpi-card-sm"><div class="value">' + e.n + ' <span class="pct">(' + pctG + '%)</span></div><div class="label">' + esc(e.label) + '</div></div>';
+    }).join("");
+    var resolucionesSinGrado = {};
+    tFilt.forEach(function(r) {
+      var norm = normalizarGradoResolucion(r.SHP_GRADE, r.SHP_RESOLUTION);
+      var g = (norm.grado || "").trim().toLowerCase();
+      if (g === "" || g === "(sin grado)" || g === "(sin grade)") resolucionesSinGrado[traducir(norm.resolucion || "(sin resolución)")] = true;
+    });
+    var resolucionesSinGradoStr = Object.keys(resolucionesSinGrado).sort().join(", ") || "—";
     var kpiTriage = document.getElementById("kpi-triage");
     if (kpiTriage) {
-      var cardsT = kpiTriage.querySelectorAll(".kpi-card");
-      if (cardsT[0]) { var v0 = cardsT[0].querySelector(".value"); if (v0) v0.innerHTML = triageTotal + ' <span class="pct">(' + pctTriage + '%)</span>'; }
-      if (cardsT[1]) { var v1 = cardsT[1].querySelector(".value"); if (v1) v1.innerHTML = gradesDistinct; }
-      if (cardsT[2]) { var v2 = cardsT[2].querySelector(".value"); if (v2) v2.innerHTML = resolutionsDistinct; }
+      var firstCard = kpiTriage.querySelector(".kpi-card:not(.kpi-card-sm)");
+      if (firstCard) { var v0 = firstCard.querySelector(".value"); if (v0) v0.innerHTML = triageTotal + ' <span class="pct">(' + pctTriage + '%)</span>'; }
+      var gradesEl = document.getElementById("kpi-triage-grades");
+      if (gradesEl) gradesEl.innerHTML = gradeCardsHtml;
+      var legendEl = document.getElementById("triage-legend");
+      if (legendEl) legendEl.innerHTML = '* En «Sin grado» se incluyen las resoluciones: ' + esc(resolucionesSinGradoStr) + '.';
     }
-    function mayuscGrado(s) { if (!s) return ""; return String(s).replace(/\b\w/g, function(c) { return c.toUpperCase(); }); }
     var triageAgg = {};
     tFilt.forEach(function(r) {
-      var key = (r.SHP_GRADE || "") + "|" + (r.SHP_RESOLUTION || "") + "|" + (r.WH_triage || "");
-      if (!triageAgg[key]) triageAgg[key] = { g: r.SHP_GRADE, res: r.SHP_RESOLUTION, wh: r.WH_triage, n: 0 };
+      var norm = normalizarGradoResolucion(r.SHP_GRADE, r.SHP_RESOLUTION);
+      var key = (norm.grado || "") + "|" + (norm.resolucion || "") + "|" + (r.WH_triage || "");
+      if (!triageAgg[key]) triageAgg[key] = { g: norm.grado, res: norm.resolucion, wh: r.WH_triage, n: 0 };
       triageAgg[key].n += r.cantidad;
     });
     var totalTriage = triageTotal || 1;
-    var tr4Rows = Object.keys(triageAgg).sort(function(a, b) { return triageAgg[b].n - triageAgg[a].n; }).map(function(k) {
-      var v = triageAgg[k];
-      var pctRow = totalTriage ? Math.round(100 * v.n / totalTriage * 10) / 10 : 0;
-      var wh = esc(traducir(v.wh));
-      var g = esc(mayuscGrado(traducir(v.g)));
-      var res = esc(traducir(v.res));
-      return "<tr><td>" + wh + "</td><td>" + g + "</td><td>" + res + "</td><td class=\"number\">" + v.n + "</td><td class=\"number\">" + pctRow + "%</td></tr>";
+    var totalByWh = {};
+    Object.keys(triageAgg).forEach(function(k) {
+      var wh = triageAgg[k].wh || "";
+      totalByWh[wh] = (totalByWh[wh] || 0) + triageAgg[k].n;
     });
-    if (tr4Rows.length) tr4Rows.push("<tr class=\"total-row\"><td><strong>Total</strong></td><td>—</td><td>—</td><td class=\"number\"><strong>" + triageTotal + "</strong></td><td class=\"number\"><strong>100%</strong></td></tr>");
+    var sinGradoPorWh = {};
+    var displayRows = [];
+    Object.keys(triageAgg).forEach(function(k) {
+      var v = triageAgg[k];
+      if (esSinGrado(v.g)) {
+        sinGradoPorWh[v.wh] = (sinGradoPorWh[v.wh] || 0) + v.n;
+      } else {
+        displayRows.push({ wh: v.wh, g: v.g, res: v.res, n: v.n });
+      }
+    });
+    Object.keys(sinGradoPorWh).forEach(function(wh) {
+      displayRows.push({ wh: wh, g: "(sin grado)", res: "Ver asterisco", n: sinGradoPorWh[wh] });
+    });
+    displayRows.sort(function(a, b) {
+      var totA = totalByWh[a.wh] || 0, totB = totalByWh[b.wh] || 0;
+      if (totB !== totA) return totB - totA;
+      return b.n - a.n;
+    });
+    var prevWh = null;
+    var tr4Rows = [];
+    displayRows.forEach(function(row) {
+      if (prevWh !== null && row.wh !== prevWh) {
+        var totWh = totalByWh[prevWh] || 0;
+        var pctWh = totalTriage ? Math.round(100 * totWh / totalTriage * 10) / 10 : 0;
+        tr4Rows.push("<tr class=\"total-row\"><td></td><td><strong>Total</strong></td><td>—</td><td class=\"number\"><strong>" + totWh + "</strong></td><td class=\"number\"><strong>" + pctWh + "%</strong></td></tr>");
+      }
+      var firstOfGroup = (prevWh !== row.wh);
+      prevWh = row.wh;
+      var whDisplay = firstOfGroup ? esc(traducir(row.wh)) : "";
+      var totWh = totalByWh[row.wh] || 1;
+      var pctRow = totWh ? Math.round(100 * row.n / totWh * 10) / 10 : 0;
+      var g = esc(row.g === "(sin grado)" ? "Sin grado" : mayuscGrado(traducir(row.g)));
+      var res = esc(traducir(row.res));
+      tr4Rows.push("<tr><td>" + whDisplay + "</td><td>" + g + "</td><td>" + res + "</td><td class=\"number\">" + row.n + "</td><td class=\"number\">" + pctRow + "%</td></tr>");
+    });
+    if (prevWh !== null) {
+      var totWh = totalByWh[prevWh] || 0;
+      var pctWh = totalTriage ? Math.round(100 * totWh / totalTriage * 10) / 10 : 0;
+      tr4Rows.push("<tr class=\"total-row\"><td></td><td><strong>Total</strong></td><td>—</td><td class=\"number\"><strong>" + totWh + "</strong></td><td class=\"number\"><strong>" + pctWh + "%</strong></td></tr>");
+    }
+    tr4Rows.push("<tr class=\"total-row\"><td><strong>Total</strong></td><td>—</td><td>—</td><td class=\"number\"><strong>" + triageTotal + "</strong></td><td class=\"number\"><strong>100%</strong></td></tr>");
     var tr4 = tr4Rows.join("");
     setTbody("tabla-triage", tr4 || "<tr><td colspan=\"5\" class=\"empty-state\">Sin datos</td></tr>");
     var tr5Keys = Object.keys(rutasMap).sort(function(a, b) { return rutasMap[b].count - rutasMap[a].count; }).slice(0, 20);
-    var totalRutas = tr5Keys.reduce(function(s, ruta) { return s + rutasMap[ruta].count; }, 0) || 1;
+    var totalParaPct = xFilt.length || 1;
     var tr5Rows = tr5Keys.map(function(ruta) {
       var v = rutasMap[ruta];
       var prom = v.count ? Math.round(v.sum / v.count * 10) / 10 : 0;
-      var pctR = totalRutas ? Math.round(100 * v.count / totalRutas * 10) / 10 : 0;
+      var pctR = totalParaPct ? Math.round(100 * v.count / totalParaPct * 10) / 10 : 0;
       return "<tr><td>" + esc(ruta) + "</td><td class=\"number\">" + prom + "</td><td class=\"number\">" + v.count + "</td><td class=\"number\">" + pctR + "%</td></tr>";
     });
-    if (tr5Rows.length) tr5Rows.push("<tr class=\"total-row\"><td><strong>Total</strong></td><td>—</td><td class=\"number\"><strong>" + totalRutas + "</strong></td><td class=\"number\"><strong>100%</strong></td></tr>");
     setTbody("tabla-xds", tr5Rows.length ? tr5Rows.join("") : "<tr><td colspan=\"4\" class=\"empty-state\">Sin datos</td></tr>");
     var kpiEst = document.getElementById("kpi-estrategico");
     if (kpiEst) {
       var ve = kpiEst.querySelectorAll(".kpi-card .value");
-      var pctRuta = total ? Math.round(100 * xFilt.length / total * 10) / 10 : 0;
+      var pctRuta = total ? Math.round(100 * xFilt.length / total * 100) / 100 : 0;
       if (ve[0]) ve[0].innerHTML = Math.round(promXds * 10) / 10;
       if (ve[1]) ve[1].innerHTML = xFilt.length + ' <span class="pct">(' + pctRuta + '%)</span>';
     }
