@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Centralización EnoE (MLM) – Dashboard</title>
+  <title>Centralización EnoE (MLM)</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -25,14 +25,15 @@
     }
     h2 { color: #3483fa; font-size: 1.25rem; margin-top: 32px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #ffe600; }
     h3 { color: #333; font-size: 1rem; margin-top: 20px; margin-bottom: 8px; }
-    .filtros { background: #f7f9fc; border: 1px solid #e3e8ef; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+    .filtros { background: #f7f9fc; border: 1px solid #e3e8ef; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; display: flex; flex-wrap: nowrap; gap: 12px; align-items: center; overflow-x: auto; }
     .filtros label { font-weight: 600; color: #333; font-size: 0.9rem; }
-    .filtros select, .filtros input { padding: 8px 12px; border: 1px solid #c4c9d1; border-radius: 4px; font-size: 0.9rem; }
+    .filtros select, .filtros input { padding: 6px 10px; border: 1px solid #c4c9d1; border-radius: 4px; font-size: 0.85rem; }
     .kpi { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
-    .kpi-card { background: #f5f5f5; border-left: 4px solid #3483fa; padding: 16px 20px; min-width: 140px; border-radius: 4px; }
+    .kpi-card { background: #f5f5f5; border-left: 4px solid #3483fa; padding: 16px 20px; min-width: 200px; border-radius: 4px; }
     .kpi-card.alert { border-left-color: #f23d4f; }
     .kpi-card.ok { border-left-color: #00a650; }
-    .kpi-card .value { font-size: 1.75rem; font-weight: 700; color: #333; }
+    .kpi-card .value { font-size: 1.25rem; font-weight: 700; color: #333; white-space: nowrap; }
+    .kpi-card .value .pct { font-size: 1.25rem; font-weight: 400; color: #666; margin-left: 0.2em; }
     .kpi-card .label { font-size: 0.85rem; color: #666; margin-top: 4px; }
     table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.08); border-radius: 4px; overflow: hidden; }
     th, td { padding: 12px 16px; }
@@ -54,13 +55,17 @@
     .filtro-pronto label { color: #5c6370; }
     .filtro-pronto select { background: #f0f2f5; color: #6b7280; }
     .leyenda-filtros { font-size: 0.85rem; color: #555; margin-top: 10px; margin-bottom: 0; padding: 8px 12px; background: #f8f9fa; border-radius: 4px; border-left: 3px solid #3483fa; }
+    .cards-regla-trocou { display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 16px; }
+    .cards-group { flex: 1; min-width: 280px; }
+    .cards-group-title { font-size: 0.95rem; color: #3483fa; margin-bottom: 8px; font-weight: 600; }
+    .kpi-card .pct { font-size: 1.25rem; font-weight: 400; color: #666; margin-top: 0; margin-left: 0.2em; display: inline; }
+    tr.total-row { background: #e8ecf0; font-weight: 600; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Centralización EnoE (MLM) – Dashboard</h1>
-    <p><strong>Fuente:</strong> meli-sbox.SBOXSHPBIPRODUCTO.Centralizacion_Datos_cursor + Centralizacion_Rutas_cursor (vista datos+rutas)</p>
-    <p><strong>Última actualización:</strong> 12/03/2026 06:21</p>
+    <h1>Centralización EnoE (MLM)</h1>
+    <p><strong>Última actualización:</strong> 12/03/2026 14:42</p>
     <div id="filtros-error" style="display:none; padding:12px; background:#fee; border:1px solid #c00; border-radius:4px; margin-bottom:16px; font-size:0.9rem;"></div>
 
     <h2>Filtros</h2>
@@ -70,20 +75,18 @@
       <div class="filtro-pronto" title="Se habilitará con más historial de datos"><label for="site">Sitio</label><select id="site"><option value="MLM" selected>MLM</option></select></div>
       <div class="filtro-pronto" title="Se habilitará con más historial de datos"><label for="fc">FC / WH</label><select id="fc"><option value="">Todos</option></select></div>
       <div class="filtro-pronto" title="Se habilitará con más historial de datos"><label for="dimension">Dimensión</label><select id="dimension"><option value="day">Día</option><option value="week">Semana</option><option value="month" selected>Mes</option></select></div>
-      <div class="filtro-pronto" title="Se habilitará con más historial de datos"><label for="orden">Ordenar por</label><select id="orden"><option value="cantidad">Cantidad</option><option value="fecha">Fecha</option></select></div>
       <button type="button" class="btn" id="btn-aplicar" title="Aplicar filtro de período">Aplicar</button>
       <button type="button" class="btn" id="btn-csv" style="background:#00a650;">Descargar CSV</button>
     </div>
-    <p class="leyenda-filtros"><strong>Filtro activo:</strong> Período (desde / hasta). Sitio, FC, Dimensión y Ordenar por se habilitarán cuando haya más historial de datos.</p>
+    <p class="leyenda-filtros"><strong>Filtro activo:</strong> Período (desde / hasta). Sitio, FC y Dimensión se habilitarán cuando haya más historial de datos.</p>
     <p class="note" style="margin-top:0;">Los datos se cargan desde <strong>reporte_datos.js</strong> (misma carpeta que este HTML). Abrí el reporte con doble clic y dejá el .js junto al HTML.</p>
 
     <h2>Resumen general</h2>
     <div class="kpi" id="kpi-resumen">
       <div class="kpi-card"><div class="value">44950</div><div class="label">Total envíos (después + válido)</div></div>
-      <div class="kpi-card ok"><div class="value">11996</div><div class="label">Sí siguió la regla</div></div>
-      <div class="kpi-card alert"><div class="value">32929</div><div class="label">No siguió la regla</div></div>
-      <div class="kpi-card"><div class="value">73.3%</div><div class="label">% error de destino</div></div>
-      <div class="kpi-card"><div class="value">31957</div><div class="label">Con triage</div></div>
+      <div class="kpi-card ok"><div class="value">11996 <span class="pct">(26.7%)</span></div><div class="label">Siguió la regla</div></div>
+      <div class="kpi-card alert"><div class="value">32929 <span class="pct">(73.3%)</span></div><div class="label">No siguió la regla</div></div>
+      <div class="kpi-card"><div class="value">31957 <span class="pct">(71.1%)</span></div><div class="label">Con triage</div></div>
     </div>
 
     <h2>Parte 1 – Seguimiento</h2>
@@ -92,1305 +95,167 @@
     <div class="section-seguimiento">
       <h3>1.1 Casos que no cumplen la regla del autorizador</h3>
       <p>Envíos donde <strong>WH generado ≠ WH planeado</strong>. Solo con status_ativacao = &quot;después&quot; y CDU_valido = &quot;VALIDO&quot;.</p>
-      <div class="kpi" id="kpi-seguimiento">
-        <div class="kpi-card alert"><div class="value">32929</div><div class="label">No siguió la regla</div></div>
-        <div class="kpi-card ok"><div class="value">11996</div><div class="label">Sí siguió la regla</div></div>
+      <div class="cards-regla-trocou">
+        <div class="cards-group">
+          <h4 class="cards-group-title">¿Siguió la regla?</h4>
+          <div class="kpi" id="kpi-seguimiento">
+            <div class="kpi-card ok"><div class="value">11996 <span class="pct">(26.7%)</span></div><div class="label">Siguió la regla</div></div>
+            <div class="kpi-card alert"><div class="value">32929 <span class="pct">(73.3%)</span></div><div class="label">No siguió la regla</div></div>
+          </div>
+        </div>
+        <div class="cards-group">
+          <h4 class="cards-group-title">¿Cambiamos WH?</h4>
+          <div class="kpi" id="kpi-trocou">
+            <div class="kpi-card"><div class="value">31798 <span class="pct">(70.8%)</span></div><div class="label">Cambiamos WH</div></div>
+            <div class="kpi-card"><div class="value">13127 <span class="pct">(29.2%)</span></div><div class="label">No cambiamos WH</div></div>
+          </div>
+        </div>
       </div>
+      <p class="note" style="margin-top:16px;">Detalle por combinación (las dos preguntas juntas):</p>
       <table id="tabla-regla">
-        <thead><tr><th>¿Siguió la regla?</th><th>¿Cambiamos WH?</th><th class="number">Cantidad</th></tr></thead>
-        <tbody>          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">49</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">11</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">5</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">4</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">82</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">41</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">14</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">6</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">14</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">25</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">4</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">2</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">352</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">260</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">113</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">38</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">324</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">180</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">105</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">35</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">210</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">77</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">45</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">19</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">265</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">116</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">92</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">18</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">388</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">170</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">153</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">40</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">369</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">135</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">93</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">46</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">459</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">363</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">180</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">62</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">486</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">238</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">216</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">55</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">524</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">319</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">220</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">50</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">3</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">307</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">118</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">100</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">28</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">258</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">179</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">109</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">34</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">184</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">132</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">111</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">31</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">454</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">207</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">193</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">57</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1183</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">1077</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">391</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">238</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1706</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">598</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">548</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">194</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1766</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">541</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">424</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">253</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">996</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">406</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">382</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">165</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">731</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">321</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">273</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">114</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">822</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">379</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">349</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">158</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1360</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">496</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">473</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">291</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1292</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">481</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">464</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">208</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1365</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">466</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">438</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">227</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1260</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">416</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">390</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">380</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1269</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">368</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">278</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">268</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">659</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">240</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">227</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">129</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1411</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">470</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">444</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">193</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">3</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1409</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">254</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">205</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">178</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1724</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">545</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">535</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">263</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">130</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">55</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">41</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">25</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
+        <thead><tr><th>¿Siguió la regla?</th><th>¿Cambiamos WH?</th><th class="number">Cantidad</th><th class="number">%</th></tr></thead>
+        <tbody>          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">23656</td><td class="number">52.6%</td></tr>
+          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">9273</td><td class="number">20.6%</td></tr>
+          <tr><td>Siguió la regla</td><td>Cambiamos WH</td><td class="number">8142</td><td class="number">18.1%</td></tr>
+          <tr><td>Siguió la regla</td><td>No cambiamos WH</td><td class="number">3854</td><td class="number">8.6%</td></tr>
+          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">25</td><td class="number">0.1%</td></tr>
+          <tr class="total-row"><td><strong>Total</strong></td><td>—</td><td class="number"><strong>44950</strong></td><td class="number"><strong>100%</strong></td></tr>
 </tbody>
       </table>
 
       <h3>1.2 Casos que pasaron por triage y qué salida tuvieron</h3>
       <p>Cantidad de envíos que ya tienen <strong>triage</strong> y distribución por <strong>Grado</strong>, <strong>Resolución</strong>, <strong>WH triage</strong>.</p>
-      <div class="kpi">
-        <div class="kpi-card"><div class="value">31957</div><div class="label">Envíos con triage</div></div>
+      <div class="kpi" id="kpi-triage">
+        <div class="kpi-card"><div class="value">31957 <span class="pct">(71.1%)</span></div><div class="label">Envíos con triage</div></div>
+        <div class="kpi-card"><div class="value">5</div><div class="label">Grados (resumen sin WH)</div></div>
+        <div class="kpi-card"><div class="value">5</div><div class="label">Resoluciones (resumen sin WH)</div></div>
       </div>
       <table id="tabla-triage">
-        <thead><tr><th>Grado</th><th>Resolución</th><th>WH triage</th><th class="number">Cantidad</th></tr></thead>
-        <tbody>          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">56</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">8</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD02</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD10</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXGT01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXGT01</td><td class="number">82</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">33</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">19</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">6</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">5</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">12</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">26</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">399</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">93</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXGT01</td><td class="number">78</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">42</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD02</td><td class="number">34</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">28</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">13</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD10</td><td class="number">10</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">8</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">8</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD12</td><td class="number">7</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD07</td><td class="number">6</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD05</td><td class="number">6</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">5</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">3</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXYU01</td><td class="number">3</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD14</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD12</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXGT01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXSO01</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD02</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">460</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">75</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">30</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD02</td><td class="number">15</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD05</td><td class="number">8</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">8</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXGT01</td><td class="number">6</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">6</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">5</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD10</td><td class="number">4</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">3</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">3</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD02</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD05</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD07</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD12</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXYU01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">248</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">49</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">38</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">4</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">2</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">383</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">58</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">30</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">6</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">541</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">126</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">49</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">5</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">5</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">4</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">3</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">459</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">104</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">46</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">5</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">5</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">4</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">3</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>Vendible</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">503</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">296</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">155</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">47</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD02</td><td class="number">17</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXGT01</td><td class="number">8</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD10</td><td class="number">5</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">4</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">4</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">3</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD05</td><td class="number">3</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXYU01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">2</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD07</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td></td><td>FOUND</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">504</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">212</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">174</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">70</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">7</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">4</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">3</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">3</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">548</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">274</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">160</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">67</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">13</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">8</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">6</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">5</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">5</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">5</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">3</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">220</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">172</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">78</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">27</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">5</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">4</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">233</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">192</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">80</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">48</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">11</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td></td><td>FOUND</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">203</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">112</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">62</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">32</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">7</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">441</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">219</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">135</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">69</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">18</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">5</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">743</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">690</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">353</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">235</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD02</td><td class="number">208</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">172</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD10</td><td class="number">119</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXGT01</td><td class="number">42</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">34</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD12</td><td class="number">33</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD05</td><td class="number">33</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">30</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD07</td><td class="number">19</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXYU01</td><td class="number">15</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">11</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD09</td><td class="number">7</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">6</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">6</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">6</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD02</td><td class="number">4</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">4</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD12</td><td class="number">4</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD02</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD02</td><td class="number">1</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD07</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXSO01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">1251</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">831</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">423</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">212</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">182</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">39</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">24</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">8</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">7</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">7</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD06</td><td class="number">4</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">3</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD06</td><td class="number">2</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">1322</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">566</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">491</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">234</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">149</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">44</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">27</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">26</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">9</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">7</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">6</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD06</td><td class="number">5</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD09</td><td class="number">4</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">3</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD14</td><td class="number">3</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>Vendible</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td></td><td>FOUND</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">665</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">479</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">341</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">178</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">119</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">23</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">10</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">7</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">2</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD06</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">502</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">361</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">280</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">97</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">62</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">14</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">14</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">3</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">447</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">378</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">336</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">271</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">73</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">26</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">16</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">15</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">14</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD06</td><td class="number">5</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">4</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD06</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td></td><td>FOUND</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">819</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">478</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">389</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">273</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">103</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">28</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">24</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD06</td><td class="number">9</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">9</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD09</td><td class="number">5</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">3</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD14</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td></td><td>FOUND</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">885</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">373</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">324</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">184</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">52</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">34</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">26</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">22</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD09</td><td class="number">5</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD06</td><td class="number">3</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">3</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>e</td><td>Vendible</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD14</td><td class="number">2</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td></td><td>FOUND</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">1049</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">294</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">201</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">120</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">39</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD06</td><td class="number">34</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">19</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">12</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">11</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD09</td><td class="number">10</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD11</td><td class="number">4</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD09</td><td class="number">3</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">812</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">170</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">137</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">50</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">17</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD09</td><td class="number">16</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">14</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">6</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">4</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD09</td><td class="number">4</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">3</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXNL01</td><td class="number">3</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">777</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">143</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">66</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD09</td><td class="number">17</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">6</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">3</td></tr>
-          <tr><td>e</td><td>No vendible</td><td>MXCD09</td><td class="number">3</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD09</td><td class="number">3</td></tr>
-          <tr><td>e</td><td>Vendible</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">2</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">180</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">86</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">61</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">30</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD09</td><td class="number">7</td></tr>
-          <tr><td>c</td><td>No vendible</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">166</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">161</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXJC01</td><td class="number">57</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD09</td><td class="number">6</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXCD09</td><td class="number">3</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">2</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td></td><td>Descartado</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD09</td><td class="number">40</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXNL01</td><td class="number">30</td></tr>
-          <tr><td>b</td><td>No vendible</td><td>MXCD09</td><td class="number">5</td></tr>
-          <tr><td></td><td>Perdido</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>a</td><td>Vendible</td><td>MXCD14</td><td class="number">1</td></tr>
+        <thead><tr><th>WH triage</th><th>Grado</th><th>Resolución</th><th class="number">Cantidad</th><th class="number">%</th></tr></thead>
+        <tbody>          <tr><td>MXJC01</td><td>A</td><td>Vendible</td><td class="number">10133</td><td class="number">31.7%</td></tr>
+          <tr><td>MXCD09</td><td>A</td><td>Vendible</td><td class="number">9127</td><td class="number">28.6%</td></tr>
+          <tr><td>MXCD11</td><td>A</td><td>Vendible</td><td class="number">4890</td><td class="number">15.3%</td></tr>
+          <tr><td>MXNL01</td><td>A</td><td>Vendible</td><td class="number">4059</td><td class="number">12.7%</td></tr>
+          <tr><td>MXCD06</td><td>A</td><td>Vendible</td><td class="number">1604</td><td class="number">5.0%</td></tr>
+          <tr><td>MXCD09</td><td>E</td><td>No vendible</td><td class="number">284</td><td class="number">0.9%</td></tr>
+          <tr><td>MXCD02</td><td>A</td><td>Vendible</td><td class="number">275</td><td class="number">0.9%</td></tr>
+          <tr><td>MXGT01</td><td>A</td><td>Vendible</td><td class="number">217</td><td class="number">0.7%</td></tr>
+          <tr><td>MXCD11</td><td>E</td><td>No vendible</td><td class="number">207</td><td class="number">0.6%</td></tr>
+          <tr><td>MXCD14</td><td>A</td><td>Vendible</td><td class="number">175</td><td class="number">0.5%</td></tr>
+          <tr><td>MXCD10</td><td>A</td><td>Vendible</td><td class="number">139</td><td class="number">0.4%</td></tr>
+          <tr><td>MXCD11</td><td>C</td><td>No vendible</td><td class="number">134</td><td class="number">0.4%</td></tr>
+          <tr><td>MXCD06</td><td>E</td><td>No vendible</td><td class="number">63</td><td class="number">0.2%</td></tr>
+          <tr><td>MXCD09</td><td>B</td><td>No vendible</td><td class="number">59</td><td class="number">0.2%</td></tr>
+          <tr><td>MXJC01</td><td>E</td><td>No vendible</td><td class="number">57</td><td class="number">0.2%</td></tr>
+          <tr><td>MXJC01</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">57</td><td class="number">0.2%</td></tr>
+          <tr><td>MXCD05</td><td>A</td><td>Vendible</td><td class="number">50</td><td class="number">0.2%</td></tr>
+          <tr><td>MXCD09</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">44</td><td class="number">0.1%</td></tr>
+          <tr><td>MXCD12</td><td>A</td><td>Vendible</td><td class="number">41</td><td class="number">0.1%</td></tr>
+          <tr><td>MXCD09</td><td>(Sin Grado)</td><td>Perdido</td><td class="number">41</td><td class="number">0.1%</td></tr>
+          <tr><td>MXJC01</td><td>(Sin Grado)</td><td>Perdido</td><td class="number">34</td><td class="number">0.1%</td></tr>
+          <tr><td>MXCD06</td><td>C</td><td>No vendible</td><td class="number">30</td><td class="number">0.1%</td></tr>
+          <tr><td>MXCD07</td><td>A</td><td>Vendible</td><td class="number">27</td><td class="number">0.1%</td></tr>
+          <tr><td>MXCD06</td><td>(Sin Grado)</td><td>Perdido</td><td class="number">26</td><td class="number">0.1%</td></tr>
+          <tr><td>MXNL01</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">26</td><td class="number">0.1%</td></tr>
+          <tr><td>MXYU01</td><td>A</td><td>Vendible</td><td class="number">21</td><td class="number">0.1%</td></tr>
+          <tr><td>MXCD11</td><td>(Sin Grado)</td><td>Perdido</td><td class="number">19</td><td class="number">0.1%</td></tr>
+          <tr><td>MXCD11</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">16</td><td class="number">0.1%</td></tr>
+          <tr><td>MXNL01</td><td>E</td><td>No vendible</td><td class="number">13</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD14</td><td>E</td><td>No vendible</td><td class="number">12</td><td class="number">0.0%</td></tr>
+          <tr><td>MXNL01</td><td>(Sin Grado)</td><td>Perdido</td><td class="number">8</td><td class="number">0.0%</td></tr>
+          <tr><td>MXJC01</td><td>C</td><td>No vendible</td><td class="number">8</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD06</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">7</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD11</td><td>B</td><td>No vendible</td><td class="number">7</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD02</td><td>E</td><td>No vendible</td><td class="number">6</td><td class="number">0.0%</td></tr>
+          <tr><td>MXNL01</td><td>C</td><td>No vendible</td><td class="number">6</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD12</td><td>E</td><td>No vendible</td><td class="number">5</td><td class="number">0.0%</td></tr>
+          <tr><td>MXJC01</td><td>(Sin Grado)</td><td>FOUND</td><td class="number">5</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD09</td><td>E</td><td>Vendible</td><td class="number">4</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD14</td><td>B</td><td>No vendible</td><td class="number">4</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD09</td><td>C</td><td>No vendible</td><td class="number">3</td><td class="number">0.0%</td></tr>
+          <tr><td>MXSO01</td><td>A</td><td>Vendible</td><td class="number">2</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD02</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">2</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD11</td><td>E</td><td>Vendible</td><td class="number">2</td><td class="number">0.0%</td></tr>
+          <tr><td>MXGT01</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD05</td><td>E</td><td>No vendible</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXJC01</td><td>E</td><td>Vendible</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD14</td><td>(Sin Grado)</td><td>Descartado</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD02</td><td>B</td><td>No vendible</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD07</td><td>E</td><td>No vendible</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD09</td><td>(Sin Grado)</td><td>FOUND</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD14</td><td>(Sin Grado)</td><td>Perdido</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr class="total-row"><td><strong>Total</strong></td><td>—</td><td>—</td><td class="number"><strong>31957</strong></td><td class="number"><strong>100%</strong></td></tr>
 </tbody>
       </table>
 
-      <h3>1.3 Casos de error de definición de destino</h3>
-      <p>Clasificación por regla y por cambio de WH.</p>
-      <table id="tabla-error-destino">
-        <thead><tr><th>¿Siguió la regla?</th><th>¿Cambiamos WH?</th><th class="number">Cantidad</th></tr></thead>
-        <tbody>          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">49</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">11</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">5</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">4</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">82</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">41</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">14</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">6</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">14</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">25</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">4</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">2</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">352</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">260</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">113</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">38</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">324</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">180</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">105</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">35</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">210</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">77</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">45</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">19</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">265</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">116</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">92</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">18</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">388</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">170</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">153</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">40</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">369</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">135</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">93</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">46</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">459</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">363</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">180</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">62</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">486</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">238</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">216</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">55</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">524</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">319</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">220</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">50</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">3</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">307</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">118</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">100</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">28</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">258</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">179</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">109</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">34</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">184</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">132</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">111</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">31</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">454</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">207</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">193</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">57</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1183</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">1077</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">391</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">238</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1706</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">598</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">548</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">194</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1766</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">541</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">424</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">253</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">996</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">406</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">382</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">165</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">731</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">321</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">273</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">114</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">822</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">379</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">349</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">158</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1360</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">496</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">473</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">291</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1292</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">481</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">464</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">208</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1365</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">466</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">438</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">227</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1260</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">416</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">390</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">380</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1269</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">368</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">278</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">268</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">659</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">240</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">227</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">129</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">2</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1411</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">470</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">444</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">193</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">3</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1409</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">254</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">205</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">178</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">1724</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">545</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">535</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">263</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-          <tr><td>No siguió la regla</td><td>Cambiamos WH</td><td class="number">130</td></tr>
-          <tr><td>No siguió la regla</td><td>No cambiamos WH</td><td class="number">55</td></tr>
-          <tr><td>Sí siguió la regla</td><td>Cambiamos WH</td><td class="number">41</td></tr>
-          <tr><td>Sí siguió la regla</td><td>No cambiamos WH</td><td class="number">25</td></tr>
-          <tr><td>Destino 2.0 aún no encontrado</td><td>Destino 2.0 aún no encontrado</td><td class="number">1</td></tr>
-</tbody>
-      </table>
-
-      <h3>1.4 Etiquetas que generaron errores</h3>
+      <h3>1.3 Etiquetas que generaron errores</h3>
       <p>Distribución de <strong>Etiqueta identificada</strong> entre los casos &quot;No siguió la regla&quot;.</p>
       <table id="tabla-tags-error">
-        <thead><tr><th>Etiqueta identificada</th><th class="number">Cantidad</th></tr></thead>
-        <tbody>          <tr><td>(sin etiqueta / NA)</td><td class="number">8</td></tr>
-          <tr><td>SORTABLE</td><td class="number">8</td></tr>
-          <tr><td>SORTABLE</td><td class="number">3</td></tr>
-          <tr><td>HV</td><td class="number">1</td></tr>
-          <tr><td>SORTABLE</td><td class="number">71</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">6</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">5</td></tr>
-          <tr><td>SORTABLE</td><td class="number">1</td></tr>
-          <tr><td>SORTABLE</td><td class="number">39</td></tr>
-          <tr><td>HV</td><td class="number">4</td></tr>
-          <tr><td>SORTABLE</td><td class="number">13</td></tr>
-          <tr><td>HV</td><td class="number">1</td></tr>
-          <tr><td>SORTABLE</td><td class="number">27</td></tr>
-          <tr><td>SORTABLE</td><td class="number">520</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">41</td></tr>
-          <tr><td>HV</td><td class="number">26</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">16</td></tr>
-          <tr><td>CPG</td><td class="number">9</td></tr>
-          <tr><td>SORTABLE</td><td class="number">452</td></tr>
-          <tr><td>HV</td><td class="number">33</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">12</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">7</td></tr>
-          <tr><td>SORTABLE</td><td class="number">234</td></tr>
-          <tr><td>HV</td><td class="number">13</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">6</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">2</td></tr>
-          <tr><td>SORTABLE</td><td class="number">355</td></tr>
-          <tr><td>HV</td><td class="number">19</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">6</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">1</td></tr>
-          <tr><td>SORTABLE</td><td class="number">506</td></tr>
-          <tr><td>HV</td><td class="number">33</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">17</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">2</td></tr>
-          <tr><td>SORTABLE</td><td class="number">422</td></tr>
-          <tr><td>HV</td><td class="number">34</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">5</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">1</td></tr>
-          <tr><td>SORTABLE</td><td class="number">750</td></tr>
-          <tr><td>HV</td><td class="number">30</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">21</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">11</td></tr>
-          <tr><td>CPG</td><td class="number">10</td></tr>
-          <tr><td>SORTABLE</td><td class="number">677</td></tr>
-          <tr><td>HV</td><td class="number">38</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">8</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">1</td></tr>
-          <tr><td>SORTABLE</td><td class="number">793</td></tr>
-          <tr><td>HV</td><td class="number">31</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">15</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">4</td></tr>
-          <tr><td>SORTABLE</td><td class="number">400</td></tr>
-          <tr><td>HV</td><td class="number">20</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">5</td></tr>
-          <tr><td>SORTABLE</td><td class="number">401</td></tr>
-          <tr><td>HV</td><td class="number">25</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">7</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">3</td></tr>
-          <tr><td>CPG</td><td class="number">1</td></tr>
-          <tr><td>SORTABLE</td><td class="number">283</td></tr>
-          <tr><td>HV</td><td class="number">27</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">5</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">1</td></tr>
-          <tr><td>SORTABLE</td><td class="number">622</td></tr>
-          <tr><td>HV</td><td class="number">28</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">8</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">3</td></tr>
-          <tr><td>SORTABLE</td><td class="number">2017</td></tr>
-          <tr><td>HV</td><td class="number">102</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">91</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">50</td></tr>
-          <tr><td>SORTABLE</td><td class="number">2162</td></tr>
-          <tr><td>HV</td><td class="number">106</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">28</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">8</td></tr>
-          <tr><td>SORTABLE</td><td class="number">2047</td></tr>
-          <tr><td>HV</td><td class="number">103</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">33</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">7</td></tr>
-          <tr><td>SORTABLE</td><td class="number">1313</td></tr>
-          <tr><td>HV</td><td class="number">64</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">21</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">4</td></tr>
-          <tr><td>SORTABLE</td><td class="number">930</td></tr>
-          <tr><td>HV</td><td class="number">56</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">15</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">3</td></tr>
-          <tr><td>SORTABLE</td><td class="number">1064</td></tr>
-          <tr><td>HV</td><td class="number">82</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">20</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">5</td></tr>
-          <tr><td>SORTABLE</td><td class="number">1731</td></tr>
-          <tr><td>HV</td><td class="number">92</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">28</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">5</td></tr>
-          <tr><td>SORTABLE</td><td class="number">1629</td></tr>
-          <tr><td>HV</td><td class="number">94</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">26</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">6</td></tr>
-          <tr><td>BULKY</td><td class="number">1</td></tr>
-          <tr><td>SORTABLE</td><td class="number">1684</td></tr>
-          <tr><td>HV</td><td class="number">84</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">22</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">13</td></tr>
-          <tr><td>SORTABLE</td><td class="number">1530</td></tr>
-          <tr><td>HV</td><td class="number">80</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">26</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">14</td></tr>
-          <tr><td>SORTABLE</td><td class="number">1427</td></tr>
-          <tr><td>HV</td><td class="number">85</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">34</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">1</td></tr>
-          <tr><td>SORTABLE</td><td class="number">825</td></tr>
-          <tr><td>HV</td><td class="number">37</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">20</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">3</td></tr>
-          <tr><td>DANGEROUS_DECLARED</td><td class="number">1</td></tr>
-          <tr><td>SORTABLE</td><td class="number">1725</td></tr>
-          <tr><td>HV</td><td class="number">110</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">14</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">6</td></tr>
-          <tr><td>SORTABLE</td><td class="number">1520</td></tr>
-          <tr><td>HV</td><td class="number">73</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">19</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">2</td></tr>
-          <tr><td>SORTABLE</td><td class="number">2116</td></tr>
-          <tr><td>HV</td><td class="number">113</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">24</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">6</td></tr>
-          <tr><td>SORTABLE</td><td class="number">172</td></tr>
-          <tr><td>HV</td><td class="number">10</td></tr>
-          <tr><td>(sin etiqueta / NA)</td><td class="number">2</td></tr>
-          <tr><td>NON_TOTABLE</td><td class="number">1</td></tr>
+        <thead><tr><th>Etiqueta identificada</th><th class="number">Cantidad</th><th class="number">%</th></tr></thead>
+        <tbody>          <tr><td>SORTABLE</td><td class="number">30469</td><td class="number">92.5%</td></tr>
+          <tr><td>HV</td><td class="number">1654</td><td class="number">5.0%</td></tr>
+          <tr><td>(SIN ETIQUETA / NA)</td><td class="number">511</td><td class="number">1.6%</td></tr>
+          <tr><td>NON_TOTABLE</td><td class="number">273</td><td class="number">0.8%</td></tr>
+          <tr><td>CPG</td><td class="number">20</td><td class="number">0.1%</td></tr>
+          <tr><td>BULKY</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>DANGEROUS_DECLARED</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr class="total-row"><td><strong>Total</strong></td><td class="number"><strong>32929</strong></td><td class="number"><strong>100%</strong></td></tr>
 </tbody>
       </table>
 
-      <h3>1.5 Destinos que reciben envíos que no deberían</h3>
+      <h3>1.4 Destinos que reciben envíos que no deberían</h3>
       <p><strong>WH generado</strong> que está recibiendo cuando el <strong>WH planeado</strong> era otro.</p>
       <table id="tabla-destinos-incorrectos">
-        <thead><tr><th>Destino que recibe (WH generado)</th><th>Destino que debería (WH planeado)</th><th class="number">Envíos incorrectos</th></tr></thead>
-        <tbody>          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">8</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">8</td></tr>
-          <tr><td>MXCD02</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXCD10</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXGT01</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXGT01</td><td>DEPENDE</td><td class="number">71</td></tr>
-          <tr><td>MXGT01</td><td>MXCD11</td><td class="number">6</td></tr>
-          <tr><td>MXGT01</td><td>MXCD09</td><td class="number">5</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">33</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">6</td></tr>
-          <tr><td>MXCD06</td><td>DEPENDE</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">2</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">12</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">2</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">26</td></tr>
-          <tr><td>MXCD06</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">378</td></tr>
-          <tr><td>MXGT01</td><td>DEPENDE</td><td class="number">70</td></tr>
-          <tr><td>MXCD02</td><td>DEPENDE</td><td class="number">34</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">26</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">13</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">12</td></tr>
-          <tr><td>MXGT01</td><td>MXCD11</td><td class="number">12</td></tr>
-          <tr><td>MXCD10</td><td>DEPENDE</td><td class="number">10</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">8</td></tr>
-          <tr><td>MXJC01</td><td>MXCD06</td><td class="number">8</td></tr>
-          <tr><td>MXCD06</td><td>DEPENDE</td><td class="number">7</td></tr>
-          <tr><td>MXCD12</td><td>MXCD11</td><td class="number">7</td></tr>
-          <tr><td>MXCD05</td><td>MXCD11</td><td class="number">6</td></tr>
-          <tr><td>MXCD07</td><td>DEPENDE</td><td class="number">6</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>MXYU01</td><td>DEPENDE</td><td class="number">2</td></tr>
-          <tr><td>MXCD12</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXGT01</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXCD14</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXNL01</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>MXSO01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXYU01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXCD02</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">449</td></tr>
-          <tr><td>MXCD02</td><td>DEPENDE</td><td class="number">15</td></tr>
-          <tr><td>MXCD05</td><td>MXCD11</td><td class="number">7</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">4</td></tr>
-          <tr><td>MXCD10</td><td>DEPENDE</td><td class="number">4</td></tr>
-          <tr><td>MXGT01</td><td>DEPENDE</td><td class="number">4</td></tr>
-          <tr><td>MXCD05</td><td>DEPENDE</td><td class="number">3</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">2</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">2</td></tr>
-          <tr><td>MXYU01</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXCD07</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXCD12</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXGT01</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXGT01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXNL01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXCD02</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">244</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">3</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">366</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">8</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">530</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">11</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">5</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">5</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">4</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>MXCD14</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">448</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">5</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">3</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">485</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">262</td></tr>
-          <tr><td>MXCD02</td><td>DEPENDE</td><td class="number">15</td></tr>
-          <tr><td>MXNL01</td><td>MXCD11</td><td class="number">11</td></tr>
-          <tr><td>MXNL01</td><td>MXCD06</td><td class="number">10</td></tr>
-          <tr><td>MXCD10</td><td>DEPENDE</td><td class="number">5</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">5</td></tr>
-          <tr><td>MXGT01</td><td>DEPENDE</td><td class="number">5</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">4</td></tr>
-          <tr><td>MXCD05</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">3</td></tr>
-          <tr><td>MXGT01</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>MXCD02</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>MXYU01</td><td>DEPENDE</td><td class="number">2</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXCD07</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">498</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">208</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">7</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">5</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXCD06</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">549</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">273</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">6</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">6</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">2</td></tr>
-          <tr><td>MXCD06</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXNL01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">248</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">172</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>MXCD06</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">224</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">189</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">11</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXNL01</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">198</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">111</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXNL01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">432</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">211</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">7</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">5</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXNL01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">731</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">713</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">236</td></tr>
-          <tr><td>MXCD02</td><td>DEPENDE</td><td class="number">210</td></tr>
-          <tr><td>MXCD10</td><td>DEPENDE</td><td class="number">135</td></tr>
-          <tr><td>MXGT01</td><td>DEPENDE</td><td class="number">40</td></tr>
-          <tr><td>MXCD12</td><td>MXCD11</td><td class="number">32</td></tr>
-          <tr><td>MXCD05</td><td>MXCD11</td><td class="number">30</td></tr>
-          <tr><td>MXCD07</td><td>DEPENDE</td><td class="number">21</td></tr>
-          <tr><td>MXYU01</td><td>DEPENDE</td><td class="number">18</td></tr>
-          <tr><td>MXCD02</td><td>MXCD09</td><td class="number">11</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">8</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">8</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">7</td></tr>
-          <tr><td>MXCD10</td><td>MXCD09</td><td class="number">6</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">6</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">6</td></tr>
-          <tr><td>MXNL01</td><td>MXCD11</td><td class="number">6</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">5</td></tr>
-          <tr><td>MXGT01</td><td>MXCD11</td><td class="number">5</td></tr>
-          <tr><td>MXYU01</td><td>MXCD11</td><td class="number">5</td></tr>
-          <tr><td>MXCD12</td><td>DEPENDE</td><td class="number">4</td></tr>
-          <tr><td>MXCD10</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>MXCD05</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>MXCD05</td><td>DEPENDE</td><td class="number">2</td></tr>
-          <tr><td>MXJC01</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXCD12</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>MXCD14</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXCD02</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXSO01</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">1213</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">838</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">205</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">12</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">8</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">7</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">6</td></tr>
-          <tr><td>MXCD06</td><td>MXNL01</td><td class="number">5</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">5</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">1340</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">573</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">228</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">13</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">9</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">9</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">5</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>MXNL01</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>MXCD06</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>MXCD14</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">679</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">519</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">175</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">13</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">4</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>MXCD14</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>MXNL01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">512</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">374</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">99</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">6</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">3</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>MXCD06</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">469</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">404</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">270</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">7</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">3</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">3</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>MXCD14</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>MXCD06</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">908</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">611</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">291</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">13</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">11</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">6</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">5</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">4</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>MXCD14</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>MXCD06</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">990</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">502</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">223</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">13</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">8</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">5</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">4</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXCD11</td><td>MXCD14</td><td class="number">1</td></tr>
-          <tr><td>MXCD14</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">1178</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">327</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">258</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">10</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">9</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">6</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">5</td></tr>
-          <tr><td>MXCD06</td><td>MXNL01</td><td class="number">4</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">2</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXNL01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">927</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">434</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">242</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">12</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">9</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">7</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">6</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>MXCD14</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">997</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">315</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">195</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">15</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">12</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">5</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>MXCD14</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>MXCD06</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">452</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">273</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">137</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">8</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">6</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">3</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>MXCD09</td><td>MXCD06</td><td class="number">1</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">1045</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">525</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">259</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">7</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">6</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">4</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">4</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">1288</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">220</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">74</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">11</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">6</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">6</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">2</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">2</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">1</td></tr>
-          <tr><td>MXCD06</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">1469</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">463</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">286</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">11</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">9</td></tr>
-          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">6</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">5</td></tr>
-          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">4</td></tr>
-          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">3</td></tr>
-          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">1</td></tr>
-          <tr><td>MXCD14</td><td>MXCD09</td><td class="number">1</td></tr>
-          <tr><td>MXNL01</td><td>MXCD11</td><td class="number">1</td></tr>
-          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">121</td></tr>
-          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">30</td></tr>
-          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">28</td></tr>
-          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">3</td></tr>
-          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">2</td></tr>
-          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">1</td></tr>
+        <thead><tr><th>Destino que recibe (WH generado)</th><th>Destino que debería (WH planeado)</th><th class="number">Envíos incorrectos</th><th class="number">%</th></tr></thead>
+        <tbody>          <tr><td>MXCD09</td><td>DEPENDE</td><td class="number">13873</td><td class="number">42.1%</td></tr>
+          <tr><td>MXJC01</td><td>DEPENDE</td><td class="number">12683</td><td class="number">38.5%</td></tr>
+          <tr><td>MXNL01</td><td>DEPENDE</td><td class="number">4735</td><td class="number">14.4%</td></tr>
+          <tr><td>MXCD02</td><td>DEPENDE</td><td class="number">275</td><td class="number">0.8%</td></tr>
+          <tr><td>MXGT01</td><td>DEPENDE</td><td class="number">191</td><td class="number">0.6%</td></tr>
+          <tr><td>MXCD10</td><td>DEPENDE</td><td class="number">155</td><td class="number">0.5%</td></tr>
+          <tr><td>MXCD11</td><td>DEPENDE</td><td class="number">139</td><td class="number">0.4%</td></tr>
+          <tr><td>MXCD11</td><td>MXCD09</td><td class="number">131</td><td class="number">0.4%</td></tr>
+          <tr><td>MXCD11</td><td>MXJC01</td><td class="number">106</td><td class="number">0.3%</td></tr>
+          <tr><td>MXCD06</td><td>MXJC01</td><td class="number">97</td><td class="number">0.3%</td></tr>
+          <tr><td>MXCD06</td><td>MXCD09</td><td class="number">83</td><td class="number">0.3%</td></tr>
+          <tr><td>MXCD09</td><td>MXCD11</td><td class="number">61</td><td class="number">0.2%</td></tr>
+          <tr><td>MXJC01</td><td>MXCD11</td><td class="number">60</td><td class="number">0.2%</td></tr>
+          <tr><td>MXCD05</td><td>MXCD11</td><td class="number">46</td><td class="number">0.1%</td></tr>
+          <tr><td>MXCD12</td><td>MXCD11</td><td class="number">40</td><td class="number">0.1%</td></tr>
+          <tr><td>MXCD07</td><td>DEPENDE</td><td class="number">29</td><td class="number">0.1%</td></tr>
+          <tr><td>MXGT01</td><td>MXCD11</td><td class="number">27</td><td class="number">0.1%</td></tr>
+          <tr><td>MXNL01</td><td>MXCD11</td><td class="number">27</td><td class="number">0.1%</td></tr>
+          <tr><td>MXCD11</td><td>MXNL01</td><td class="number">25</td><td class="number">0.1%</td></tr>
+          <tr><td>MXYU01</td><td>DEPENDE</td><td class="number">23</td><td class="number">0.1%</td></tr>
+          <tr><td>MXCD06</td><td>MXNL01</td><td class="number">19</td><td class="number">0.1%</td></tr>
+          <tr><td>MXNL01</td><td>MXCD06</td><td class="number">12</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD14</td><td>MXCD09</td><td class="number">12</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD02</td><td>MXCD09</td><td class="number">11</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD06</td><td>DEPENDE</td><td class="number">10</td><td class="number">0.0%</td></tr>
+          <tr><td>MXJC01</td><td>MXCD06</td><td class="number">8</td><td class="number">0.0%</td></tr>
+          <tr><td>MXYU01</td><td>MXCD11</td><td class="number">6</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD10</td><td>MXCD09</td><td class="number">6</td><td class="number">0.0%</td></tr>
+          <tr><td>MXGT01</td><td>MXCD09</td><td class="number">5</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD05</td><td>DEPENDE</td><td class="number">5</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD12</td><td>DEPENDE</td><td class="number">4</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD10</td><td>MXCD11</td><td class="number">3</td><td class="number">0.0%</td></tr>
+          <tr><td>MXGT01</td><td>MXJC01</td><td class="number">2</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD14</td><td>MXJC01</td><td class="number">2</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD02</td><td>MXJC01</td><td class="number">2</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD02</td><td>MXNL01</td><td class="number">2</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD05</td><td>MXCD09</td><td class="number">2</td><td class="number">0.0%</td></tr>
+          <tr><td>MXJC01</td><td>MXCD09</td><td class="number">2</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD12</td><td>MXJC01</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXSO01</td><td>MXCD11</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD09</td><td>MXJC01</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXJC01</td><td>MXNL01</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD12</td><td>MXCD09</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD14</td><td>MXCD11</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD02</td><td>MXCD11</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXSO01</td><td>DEPENDE</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD11</td><td>MXCD14</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr><td>MXCD09</td><td>MXCD06</td><td class="number">1</td><td class="number">0.0%</td></tr>
+          <tr class="total-row"><td><strong>Total</strong></td><td>—</td><td class="number"><strong>32929</strong></td><td class="number"><strong>100%</strong></td></tr>
 </tbody>
       </table>
     </div>
@@ -1403,30 +268,31 @@
       <p>Desde vista datos+rutas: <strong>cantidad_XDs</strong> = (operational_steps_count − 2). <span class="promedio-line">Línea de promedio cuando haya gráfico.</span></p>
       <div class="kpi" id="kpi-estrategico">
         <div class="kpi-card"><div class="value">1.4</div><div class="label">Promedio XDs por envío</div></div>
-        <div class="kpi-card"><div class="value">44947</div><div class="label">Envíos con ruta</div></div>
+        <div class="kpi-card"><div class="value">44947 <span class="pct">(100.0%)</span></div><div class="label">Envíos con ruta</div></div>
       </div>
       <table id="tabla-xds">
-        <thead><tr><th>Ruta (inicio → fin)</th><th class="number">XD (promedio)</th><th class="number">Envíos</th></tr></thead>
-        <tbody>          <tr><td>MXXEM2 &gt; MXCD09</td><td class="number">0.0</td><td class="number">4173</td></tr>
-          <tr><td>MXXEM3 &gt; MXCD09</td><td class="number">0.0</td><td class="number">1857</td></tr>
-          <tr><td>MXXGD1 &gt; MXJC01</td><td class="number">0.0</td><td class="number">1737</td></tr>
-          <tr><td>MXXEM2 &gt; MXCD11</td><td class="number">0.0</td><td class="number">975</td></tr>
-          <tr><td>SGD1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">1.0</td><td class="number">951</td></tr>
-          <tr><td>SBJ1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">849</td></tr>
-          <tr><td>SCQ1 &gt; MXXCQ1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">831</td></tr>
-          <tr><td>MXXMT1 &gt; MXNL01</td><td class="number">0.0</td><td class="number">805</td></tr>
-          <tr><td>SML1 &gt; MXXML1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">755</td></tr>
-          <tr><td>SHM1 &gt; MXXHM1 &gt; MXXCU1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">654</td></tr>
-          <tr><td>SPV1 &gt; MXXPV1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">595</td></tr>
-          <tr><td>SMT2 &gt; MXXMT1 &gt; MXNL01</td><td class="number">1.0</td><td class="number">582</td></tr>
-          <tr><td>STA1 &gt; MXXTA1 &gt; MXXMT1 &gt; MXNL01</td><td class="number">2.0</td><td class="number">558</td></tr>
-          <tr><td>SSL1 &gt; MXXSL1 &gt; MXXEM2 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">507</td></tr>
-          <tr><td>SMT1 &gt; MXXMT1 &gt; MXNL01</td><td class="number">1.0</td><td class="number">505</td></tr>
-          <tr><td>SMX9 &gt; MXXEM2 &gt; MXCD09</td><td class="number">1.0</td><td class="number">499</td></tr>
-          <tr><td>SGD2 &gt; MXXGD1 &gt; MXJC01</td><td class="number">1.0</td><td class="number">494</td></tr>
-          <tr><td>SMX5 &gt; MXXEM2 &gt; MXCD09</td><td class="number">1.0</td><td class="number">490</td></tr>
-          <tr><td>SZC1 &gt; MXXZC1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">477</td></tr>
-          <tr><td>SLE1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">473</td></tr>
+        <thead><tr><th>Ruta (inicio → fin)</th><th class="number">XD (promedio)</th><th class="number">Envíos</th><th class="number">%</th></tr></thead>
+        <tbody>          <tr><td>MXXEM2 &gt; MXCD09</td><td class="number">0.0</td><td class="number">4173</td><td class="number">22.2%</td></tr>
+          <tr><td>MXXEM3 &gt; MXCD09</td><td class="number">0.0</td><td class="number">1857</td><td class="number">9.9%</td></tr>
+          <tr><td>MXXGD1 &gt; MXJC01</td><td class="number">0.0</td><td class="number">1737</td><td class="number">9.3%</td></tr>
+          <tr><td>MXXEM2 &gt; MXCD11</td><td class="number">0.0</td><td class="number">975</td><td class="number">5.2%</td></tr>
+          <tr><td>SGD1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">1.0</td><td class="number">951</td><td class="number">5.1%</td></tr>
+          <tr><td>SBJ1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">849</td><td class="number">4.5%</td></tr>
+          <tr><td>SCQ1 &gt; MXXCQ1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">831</td><td class="number">4.4%</td></tr>
+          <tr><td>MXXMT1 &gt; MXNL01</td><td class="number">0.0</td><td class="number">805</td><td class="number">4.3%</td></tr>
+          <tr><td>SML1 &gt; MXXML1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">755</td><td class="number">4.0%</td></tr>
+          <tr><td>SHM1 &gt; MXXHM1 &gt; MXXCU1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">654</td><td class="number">3.5%</td></tr>
+          <tr><td>SPV1 &gt; MXXPV1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">595</td><td class="number">3.2%</td></tr>
+          <tr><td>SMT2 &gt; MXXMT1 &gt; MXNL01</td><td class="number">1.0</td><td class="number">582</td><td class="number">3.1%</td></tr>
+          <tr><td>STA1 &gt; MXXTA1 &gt; MXXMT1 &gt; MXNL01</td><td class="number">2.0</td><td class="number">558</td><td class="number">3.0%</td></tr>
+          <tr><td>SSL1 &gt; MXXSL1 &gt; MXXEM2 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">507</td><td class="number">2.7%</td></tr>
+          <tr><td>SMT1 &gt; MXXMT1 &gt; MXNL01</td><td class="number">1.0</td><td class="number">505</td><td class="number">2.7%</td></tr>
+          <tr><td>SMX9 &gt; MXXEM2 &gt; MXCD09</td><td class="number">1.0</td><td class="number">499</td><td class="number">2.7%</td></tr>
+          <tr><td>SGD2 &gt; MXXGD1 &gt; MXJC01</td><td class="number">1.0</td><td class="number">494</td><td class="number">2.6%</td></tr>
+          <tr><td>SMX5 &gt; MXXEM2 &gt; MXCD09</td><td class="number">1.0</td><td class="number">490</td><td class="number">2.6%</td></tr>
+          <tr><td>SZC1 &gt; MXXZC1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">3.0</td><td class="number">477</td><td class="number">2.5%</td></tr>
+          <tr><td>SLE1 &gt; MXXLE1 &gt; MXXGD1 &gt; MXJC01</td><td class="number">2.0</td><td class="number">473</td><td class="number">2.5%</td></tr>
+          <tr class="total-row"><td><strong>Total</strong></td><td>—</td><td class="number"><strong>18767</strong></td><td class="number"><strong>100%</strong></td></tr>
 </tbody>
       </table>
 
@@ -1435,8 +301,10 @@
     </div>
 
     <div class="footer">
+      <strong>Fuentes de datos y lógicas principales</strong><br>
+      meli-sbox.SBOXSHPBIPRODUCTO.Centralizacion_Datos_cursor + Centralizacion_Rutas_cursor (vista datos+rutas). Filtro base: status_ativacao = &quot;después&quot;, CDU_valido = &quot;VALIDO&quot;; clasificación regla/trocou según query_centralizacion_datos.sql.<br><br>
       Reporte generado desde BigQuery. Centralización EnoE MLM.<br>
-      <strong>Última actualización:</strong> 12/03/2026 06:21 — <strong>Ver reporte:</strong> <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/estefanianari-hue/AI-Reverse-Logistics/main/reporte_centralizacion_eneo.html" target="_blank" rel="noopener">htmlpreview (AI-Reverse-Logistics)</a>
+      <strong>Última actualización:</strong> 12/03/2026 14:42 — <strong>Ver reporte:</strong> <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/estefanianari-hue/AI-Reverse-Logistics/main/reporte_centralizacion_eneo.html" target="_blank" rel="noopener">htmlpreview (AI-Reverse-Logistics)</a>
     </div>
   </div>
   <script src="reporte_datos.js"></script>
@@ -1454,12 +322,12 @@
     var D = window.REPORTE_DATOS || null;
     if (!D) { mostrarError("No se cargó reporte_datos.js. Dejalo en la misma carpeta que este HTML. Si ya está: abrí el HTML con doble clic desde ESA carpeta en el Explorador. Si sigue fallando, en la terminal: cd para_github && python -m http.server 8080 y abrí http://localhost:8080/reporte_centralizacion_eneo.html"); return; }
     var TRADUCIR = {
-    "Seguiu regra": "Sí siguió la regla",
+    "Seguiu regra": "Siguió la regla",
     "Nao seguiu regra": "No siguió la regla",
     "Trocamos WH": "Cambiamos WH",
     "Nao trocamos WH": "No cambiamos WH",
     "destino 2.0 aún no encontrado": "Destino 2.0 aún no encontrado",
-    "(sin flag / NA)": "(sin etiqueta / NA)",
+    "(sin flag / NA)": "(SIN ETIQUETA / NA)",
     "(sin grade)": "(sin grado)",
     "(sin resolution)": "(sin resolución)",
     "(sin facility)": "(sin instalación)",
@@ -1537,7 +405,17 @@
     var total = sum(cFilt, "cantidad");
     var nao = cFilt.filter(function(r) { return r.classificacao_regra_WH === "Nao seguiu regra"; }).reduce(function(a, r) { return a + r.cantidad; }, 0);
     var seguiu = cFilt.filter(function(r) { return r.classificacao_regra_WH === "Seguiu regra"; }).reduce(function(a, r) { return a + r.cantidad; }, 0);
+    var trocou_si = cFilt.filter(function(r) { return r.classificacao_trocou_WH === "Trocamos WH"; }).reduce(function(a, r) { return a + r.cantidad; }, 0);
+    var trocou_nao = cFilt.filter(function(r) { return r.classificacao_trocou_WH === "Nao trocamos WH"; }).reduce(function(a, r) { return a + r.cantidad; }, 0);
+    var total_regla = seguiu + nao;
+    var total_trocou = trocou_si + trocou_nao;
+    var pct_seguiu = total_regla ? Math.round(100 * seguiu / total_regla * 10) / 10 : 0;
+    var pct_nao = total_regla ? Math.round(100 * nao / total_regla * 10) / 10 : 0;
+    var pct_trocou_si = total_trocou ? Math.round(100 * trocou_si / total_trocou * 10) / 10 : 0;
+    var pct_trocou_nao = total_trocou ? Math.round(100 * trocou_nao / total_trocou * 10) / 10 : 0;
     var pct = total ? Math.round(100 * nao / total * 10) / 10 : 0;
+    var pctSeguiuTotal = total ? Math.round(100 * seguiu / total * 10) / 10 : 0;
+    var pctNaoTotal = total ? Math.round(100 * nao / total * 10) / 10 : 0;
     var triageTotal = sum(tFilt, "cantidad");
     var rutasMap = {};
     xFilt.forEach(function(r) {
@@ -1550,15 +428,20 @@
     var kpiMain = document.getElementById("kpi-resumen");
     var vals = kpiMain ? kpiMain.querySelectorAll(".kpi-card .value") : [];
     if (vals[0]) vals[0].innerHTML = total;
-    if (vals[1]) vals[1].innerHTML = seguiu;
-    if (vals[2]) vals[2].innerHTML = nao;
-    if (vals[3]) vals[3].innerHTML = pct + "%";
-    if (vals[4]) vals[4].innerHTML = triageTotal;
+    if (vals[1]) vals[1].innerHTML = seguiu + ' <span class="pct">(' + pctSeguiuTotal + '%)</span>';
+    if (vals[2]) vals[2].innerHTML = nao + ' <span class="pct">(' + pctNaoTotal + '%)</span>';
+    if (vals[3]) vals[3].innerHTML = triageTotal + ' <span class="pct">(' + (total ? Math.round(100 * triageTotal / total * 10) / 10 : 0) + '%)</span>';
     var kpiSeg = document.getElementById("kpi-seguimiento");
     if (kpiSeg) {
-      var vs = kpiSeg.querySelectorAll(".kpi-card .value");
-      if (vs[0]) vs[0].innerHTML = nao;
-      if (vs[1]) vs[1].innerHTML = seguiu;
+      var cardsSeg = kpiSeg.querySelectorAll(".kpi-card");
+      if (cardsSeg[0]) { var v0 = cardsSeg[0].querySelector(".value"); if (v0) v0.innerHTML = seguiu + ' <span class="pct">(' + pct_seguiu + '%)</span>'; }
+      if (cardsSeg[1]) { var v1 = cardsSeg[1].querySelector(".value"); if (v1) v1.innerHTML = nao + ' <span class="pct">(' + pct_nao + '%)</span>'; }
+    }
+    var kpiTrocou = document.getElementById("kpi-trocou");
+    if (kpiTrocou) {
+      var cardsTro = kpiTrocou.querySelectorAll(".kpi-card");
+      if (cardsTro[0]) { var v0 = cardsTro[0].querySelector(".value"); if (v0) v0.innerHTML = trocou_si + ' <span class="pct">(' + pct_trocou_si + '%)</span>'; }
+      if (cardsTro[1]) { var v1 = cardsTro[1].querySelector(".value"); if (v1) v1.innerHTML = trocou_nao + ' <span class="pct">(' + pct_trocou_nao + '%)</span>'; }
     }
     var reglaAgg = {};
     cFilt.forEach(function(r) {
@@ -1566,55 +449,93 @@
       if (!reglaAgg[key]) reglaAgg[key] = { regla: r.classificacao_regra_WH, trocou: r.classificacao_trocou_WH, cantidad: 0 };
       reglaAgg[key].cantidad += r.cantidad;
     });
-    var tr1 = Object.keys(reglaAgg).sort(function(a, b) { return reglaAgg[b].cantidad - reglaAgg[a].cantidad; }).map(function(k) {
+    var totalRegla = cFilt.reduce(function(s, r) { return s + (r.cantidad || 0); }, 0) || 1;
+    var tr1Rows = Object.keys(reglaAgg).sort(function(a, b) { return reglaAgg[b].cantidad - reglaAgg[a].cantidad; }).map(function(k) {
       var v = reglaAgg[k];
-      return "<tr><td>" + esc(traducir(v.regla)) + "</td><td>" + esc(traducir(v.trocou)) + "</td><td class=\"number\">" + v.cantidad + "</td></tr>";
-    }).join("");
-    setTbody("tabla-regla", tr1 || "<tr><td colspan=\"3\" class=\"empty-state\">Sin datos en el período</td></tr>");
+      var pctR = totalRegla ? Math.round(100 * v.cantidad / totalRegla * 10) / 10 : 0;
+      return "<tr><td>" + esc(traducir(v.regla)) + "</td><td>" + esc(traducir(v.trocou)) + "</td><td class=\"number\">" + v.cantidad + "</td><td class=\"number\">" + pctR + "%</td></tr>";
+    });
+    if (tr1Rows.length) tr1Rows.push("<tr class=\"total-row\"><td><strong>Total</strong></td><td>—</td><td class=\"number\"><strong>" + totalRegla + "</strong></td><td class=\"number\"><strong>100%</strong></td></tr>");
+    var tr1 = tr1Rows.join("");
+    setTbody("tabla-regla", tr1 || "<tr><td colspan=\"4\" class=\"empty-state\">Sin datos en el período</td></tr>");
     var flagsAgg = {};
     fFilt.forEach(function(r) {
       var fl = r.flag_identificada || "";
       if (!flagsAgg[fl]) flagsAgg[fl] = 0;
       flagsAgg[fl] += r.cantidad;
     });
-    var tr2 = Object.keys(flagsAgg).sort(function(a, b) { return flagsAgg[b] - flagsAgg[a]; }).map(function(fl) {
-      return "<tr><td>" + esc(traducir(fl)) + "</td><td class=\"number\">" + flagsAgg[fl] + "</td></tr>";
-    }).join("");
-    setTbody("tabla-tags-error", tr2 || "<tr><td colspan=\"2\" class=\"empty-state\">Sin datos</td></tr>");
+    var totalFlags = Object.keys(flagsAgg).reduce(function(s, fl) { return s + flagsAgg[fl]; }, 0) || 1;
+    var tr2Rows = Object.keys(flagsAgg).sort(function(a, b) { return flagsAgg[b] - flagsAgg[a]; }).map(function(fl) {
+      var n = flagsAgg[fl];
+      var pctF = totalFlags ? Math.round(100 * n / totalFlags * 10) / 10 : 0;
+      return "<tr><td>" + esc(traducir(fl)) + "</td><td class=\"number\">" + n + "</td><td class=\"number\">" + pctF + "%</td></tr>";
+    });
+    if (tr2Rows.length) tr2Rows.push("<tr class=\"total-row\"><td><strong>Total</strong></td><td class=\"number\"><strong>" + totalFlags + "</strong></td><td class=\"number\"><strong>100%</strong></td></tr>");
+    var tr2 = tr2Rows.join("");
+    setTbody("tabla-tags-error", tr2 || "<tr><td colspan=\"3\" class=\"empty-state\">Sin datos</td></tr>");
     var destAgg = {};
     dFilt.forEach(function(r) {
       var key = (r.destino_recibe || "") + "|" + (r.destino_deberia || "");
       if (!destAgg[key]) destAgg[key] = { recibe: r.destino_recibe, deberia: r.destino_deberia, n: 0 };
       destAgg[key].n += r.envios_incorrectos;
     });
-    var tr3 = Object.keys(destAgg).sort(function(a, b) { return destAgg[b].n - destAgg[a].n; }).map(function(k) {
+    var totalDest = Object.keys(destAgg).reduce(function(s, k) { return s + destAgg[k].n; }, 0) || 1;
+    var tr3Rows = Object.keys(destAgg).sort(function(a, b) { return destAgg[b].n - destAgg[a].n; }).map(function(k) {
       var v = destAgg[k];
-      return "<tr><td>" + esc(traducir(String(v.recibe))) + "</td><td>" + esc(traducir(String(v.deberia))) + "</td><td class=\"number\">" + v.n + "</td></tr>";
-    }).join("");
-    setTbody("tabla-destinos-incorrectos", tr3 || "<tr><td colspan=\"3\" class=\"empty-state\">Sin datos</td></tr>");
+      var pctD = totalDest ? Math.round(100 * v.n / totalDest * 10) / 10 : 0;
+      return "<tr><td>" + esc(traducir(String(v.recibe))) + "</td><td>" + esc(traducir(String(v.deberia))) + "</td><td class=\"number\">" + v.n + "</td><td class=\"number\">" + pctD + "%</td></tr>";
+    });
+    if (tr3Rows.length) tr3Rows.push("<tr class=\"total-row\"><td><strong>Total</strong></td><td>—</td><td class=\"number\"><strong>" + totalDest + "</strong></td><td class=\"number\"><strong>100%</strong></td></tr>");
+    var tr3 = tr3Rows.join("");
+    setTbody("tabla-destinos-incorrectos", tr3 || "<tr><td colspan=\"4\" class=\"empty-state\">Sin datos</td></tr>");
+    var pctTriage = total ? Math.round(100 * triageTotal / total * 10) / 10 : 0;
+    var gradesSet = {};
+    var resSet = {};
+    tFilt.forEach(function(r) { if (r.SHP_GRADE) gradesSet[r.SHP_GRADE] = true; if (r.SHP_RESOLUTION) resSet[r.SHP_RESOLUTION] = true; });
+    var gradesDistinct = Object.keys(gradesSet).length;
+    var resolutionsDistinct = Object.keys(resSet).length;
+    var kpiTriage = document.getElementById("kpi-triage");
+    if (kpiTriage) {
+      var cardsT = kpiTriage.querySelectorAll(".kpi-card");
+      if (cardsT[0]) { var v0 = cardsT[0].querySelector(".value"); if (v0) v0.innerHTML = triageTotal + ' <span class="pct">(' + pctTriage + '%)</span>'; }
+      if (cardsT[1]) { var v1 = cardsT[1].querySelector(".value"); if (v1) v1.innerHTML = gradesDistinct; }
+      if (cardsT[2]) { var v2 = cardsT[2].querySelector(".value"); if (v2) v2.innerHTML = resolutionsDistinct; }
+    }
+    function mayuscGrado(s) { if (!s) return ""; return String(s).replace(/\b\w/g, function(c) { return c.toUpperCase(); }); }
     var triageAgg = {};
     tFilt.forEach(function(r) {
       var key = (r.SHP_GRADE || "") + "|" + (r.SHP_RESOLUTION || "") + "|" + (r.WH_triage || "");
       if (!triageAgg[key]) triageAgg[key] = { g: r.SHP_GRADE, res: r.SHP_RESOLUTION, wh: r.WH_triage, n: 0 };
       triageAgg[key].n += r.cantidad;
     });
-    var tr4 = Object.keys(triageAgg).sort(function(a, b) { return triageAgg[b].n - triageAgg[a].n; }).map(function(k) {
+    var totalTriage = triageTotal || 1;
+    var tr4Rows = Object.keys(triageAgg).sort(function(a, b) { return triageAgg[b].n - triageAgg[a].n; }).map(function(k) {
       var v = triageAgg[k];
-      return "<tr><td>" + esc(traducir(v.g)) + "</td><td>" + esc(traducir(v.res)) + "</td><td>" + esc(traducir(v.wh)) + "</td><td class=\"number\">" + v.n + "</td></tr>";
-    }).join("");
-    setTbody("tabla-triage", tr4 || "<tr><td colspan=\"4\" class=\"empty-state\">Sin datos</td></tr>");
-    setTbody("tabla-error-destino", tr1);
-    var tr5Rows = Object.keys(rutasMap).sort(function(a, b) { return rutasMap[b].count - rutasMap[a].count; }).slice(0, 20).map(function(ruta) {
+      var pctRow = totalTriage ? Math.round(100 * v.n / totalTriage * 10) / 10 : 0;
+      var wh = esc(traducir(v.wh));
+      var g = esc(mayuscGrado(traducir(v.g)));
+      var res = esc(traducir(v.res));
+      return "<tr><td>" + wh + "</td><td>" + g + "</td><td>" + res + "</td><td class=\"number\">" + v.n + "</td><td class=\"number\">" + pctRow + "%</td></tr>";
+    });
+    if (tr4Rows.length) tr4Rows.push("<tr class=\"total-row\"><td><strong>Total</strong></td><td>—</td><td>—</td><td class=\"number\"><strong>" + triageTotal + "</strong></td><td class=\"number\"><strong>100%</strong></td></tr>");
+    var tr4 = tr4Rows.join("");
+    setTbody("tabla-triage", tr4 || "<tr><td colspan=\"5\" class=\"empty-state\">Sin datos</td></tr>");
+    var tr5Keys = Object.keys(rutasMap).sort(function(a, b) { return rutasMap[b].count - rutasMap[a].count; }).slice(0, 20);
+    var totalRutas = tr5Keys.reduce(function(s, ruta) { return s + rutasMap[ruta].count; }, 0) || 1;
+    var tr5Rows = tr5Keys.map(function(ruta) {
       var v = rutasMap[ruta];
       var prom = v.count ? Math.round(v.sum / v.count * 10) / 10 : 0;
-      return "<tr><td>" + esc(ruta) + "</td><td class=\"number\">" + prom + "</td><td class=\"number\">" + v.count + "</td></tr>";
+      var pctR = totalRutas ? Math.round(100 * v.count / totalRutas * 10) / 10 : 0;
+      return "<tr><td>" + esc(ruta) + "</td><td class=\"number\">" + prom + "</td><td class=\"number\">" + v.count + "</td><td class=\"number\">" + pctR + "%</td></tr>";
     });
-    setTbody("tabla-xds", tr5Rows.length ? tr5Rows.join("") : "<tr><td colspan=\"3\" class=\"empty-state\">Sin datos</td></tr>");
+    if (tr5Rows.length) tr5Rows.push("<tr class=\"total-row\"><td><strong>Total</strong></td><td>—</td><td class=\"number\"><strong>" + totalRutas + "</strong></td><td class=\"number\"><strong>100%</strong></td></tr>");
+    setTbody("tabla-xds", tr5Rows.length ? tr5Rows.join("") : "<tr><td colspan=\"4\" class=\"empty-state\">Sin datos</td></tr>");
     var kpiEst = document.getElementById("kpi-estrategico");
     if (kpiEst) {
       var ve = kpiEst.querySelectorAll(".kpi-card .value");
+      var pctRuta = total ? Math.round(100 * xFilt.length / total * 10) / 10 : 0;
       if (ve[0]) ve[0].innerHTML = Math.round(promXds * 10) / 10;
-      if (ve[1]) ve[1].innerHTML = xFilt.length;
+      if (ve[1]) ve[1].innerHTML = xFilt.length + ' <span class="pct">(' + pctRuta + '%)</span>';
     }
     if (btn) { btn.textContent = "Aplicar"; btn.disabled = false; }
     } catch (err) {
